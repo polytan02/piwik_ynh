@@ -1,0 +1,69 @@
+{
+    "name": "Leed",
+    "id": "leed",
+    "description": {
+        "en": "Leed is a minimalistic RSS feed aggregator which allows quick and non-intrusive reading of feeds.",
+	"fr": "Leed est un agrégateur RSS minimaliste qui permet la consultation de flux RSS de manière rapide et non intrusive."
+    },
+    "developer": {
+        "name": "Maniack Crudelis",
+        "email": "maniack@crudelis.fr",
+        "url": "http://projet.idleman.fr/leed/"
+    },
+    "multi_instance": "true",
+    "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+                "ask": {
+                    "en": "Choose a domain for Leed",
+		    "fr": "Choisissez un domaine pour Leed"
+                },
+                "example": "domain.org"
+            },
+            {
+                "name": "path",
+                "ask": {
+                    "en": "Choose a path for Leed",
+		    "fr": "Choisissez un chemin pour Leed"
+                },
+                "example": "/leed",
+                "default": "/leed"
+            },
+	    {
+		"name": "admin",
+		"ask": {
+		    "en": "Choose the Leed administrator (must be an existing YunoHost user)",
+		    "fr": "Choisissez un administrateur Leed (doit être un utilisateur YunoHost)"
+		},
+		"example": "john"
+	    },
+	    {
+		"name": "password",
+		"ask": {
+		    "en": "Set the administrator password Leed",
+ 			"fr": "Définissez le mot de passe administrateur de Leed"
+		},
+		"example": "Choose a password"
+	    },
+	    {
+		"name": "language",
+		"ask": {
+		    "en": "Choose your agregator's language",
+		    "fr": "Choisissez la langue de votre agrégateur"
+		},
+		"choices" : ["en", "fr", "es"],
+		"default" : "en"
+	    },
+		{
+			"name": "is_public",
+			"ask": {
+				"en": "Is it a public website ?",
+				"fr": "Est-ce un site public ?"
+			},
+			"choices": ["Yes", "No"],
+			"default": "No"
+		}
+        ]
+    }
+}
