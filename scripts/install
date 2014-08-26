@@ -43,17 +43,17 @@ sudo yunohost app initdb $db_user -p $db_pwd
 sudo yunohost app setting piwik mysqlpwd -v $db_pwd
 
 # Copy files to right place
-#; final_path=/var/www/piwik
-#; sudo mkdir -p $final_path
-#; sudo cp -a ../sources/* $final_path
-#; sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/piwik.conf
+final_path=/var/www/piwik
+sudo mkdir -p $final_path
+sudo cp -a ../sources/* $final_path
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/piwik.conf
 
 # Set right permissions for curl install
-#; sudo chown -R www-data: $final_path
+sudo chown -R www-data: $final_path
 
 # Change variables in piwik configuration
-#; sudo sed -i "s@PATHTOCHANGE@$path@g" /etc/nginx/conf.d/$domain.d/piwik.conf
-#; sudo sed -i "s@ALIASTOCHANGE@$final_path/@g" /etc/nginx/conf.d/$domain.d/piwik.conf
+sudo sed -i "s@PATHTOCHANGE@$path@g" /etc/nginx/conf.d/$domain.d/piwik.conf
+sudo sed -i "s@ALIASTOCHANGE@$final_path/@g" /etc/nginx/conf.d/$domain.d/piwik.conf
 
 # Rend la page d'install publique pour curl
 sudo yunohost app setting piwik unprotected_uris -v "/"	#L'usage de unprotected_uris a la place de skipped_uris permet de passer le header d'auth http
@@ -66,19 +66,14 @@ sudo service nginx reload
 echo "127.0.0.1 $domain #yunopiwik" | sudo tee -a /etc/hosts
 sleep 1
 
-# Var curl
-# $db_user
-# $db_pwd (utilisé aussi en tant que mdp de l'admin en attendant ldap)
-# $domain$path
-# $admin
-# $email!?
-# $timezone!!! Europe/Paris
+# Récupération du fuseau horaire du serveur
+timezone=$(cat /etc/timezone)
 
 echo "Appel curl: Installation de la base de données"
 curl -kL -d host="localhost" -d username="$db_user" -d password="$db_pwd" -d dbname="$db_user" -d tables_prefix="piwik_" -d adapter="PDO\\MYSQL" "https://$domain$path/index.php?action=databaseSetup&trackerStatus=500&clientProtocol=https"
 
 echo "Appel curl: Super Utilisateur"
-curl -kL -d login="$admin" -d password="$db_pwd" -d password_bis="$db_pwd" -d email="$email" -d subscribe_newsletter_piwikorg="0" -d subscribe_newsletter_piwikpro="0" "https://$domain$path/index.php?action=setupSuperUser&trackerStatus=500&clientProtocol=https&module=Installation"
+curl -kL -d login="$admin" -d password="$db_pwd" -d password_bis="$db_pwd" -d email="email@domain.tld" -d subscribe_newsletter_piwikorg="0" -d subscribe_newsletter_piwikpro="0" "https://$domain$path/index.php?action=setupSuperUser&trackerStatus=500&clientProtocol=https&module=Installation"
 
 echo "Appel curl: Paramétrer un site"
 curl -kL -d siteName="$domain" -d url="https://$domain" -d timezone="$timezone" -d ecommerce="0" "https://$domain$path/index.php?action=firstWebsiteSetup&trackerStatus=500&clientProtocol=https&module=Installation"
