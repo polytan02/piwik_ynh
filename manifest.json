@@ -1,69 +1,45 @@
 {
-    "name": "Leed",
-    "id": "leed",
+    "name": "Piwik",
+    "id": "piwik",
     "description": {
-        "en": "Leed is a minimalistic RSS feed aggregator which allows quick and non-intrusive reading of feeds.",
-	"fr": "Leed est un agrégateur RSS minimaliste qui permet la consultation de flux RSS de manière rapide et non intrusive."
+        "en": "EN COURS",
+	"fr": "EN COURS"
     },
     "developer": {
         "name": "Maniack Crudelis",
         "email": "maniack@crudelis.fr",
-        "url": "http://projet.idleman.fr/leed/"
+        "url": "A AJOUTER"
     },
-    "multi_instance": "true",
+    "multi_instance": "false",
     "arguments": {
         "install" : [
             {
                 "name": "domain",
                 "ask": {
-                    "en": "Choose a domain for Leed",
-		    "fr": "Choisissez un domaine pour Leed"
+                    "en": "Choose a domain for Piwik",
+		    "fr": "Choisissez un domaine pour Piwik"
                 },
-                "example": "domain.org"
+                "example": "domain.org",
+                "default": "crudelis-test.fr"
             },
             {
                 "name": "path",
                 "ask": {
-                    "en": "Choose a path for Leed",
-		    "fr": "Choisissez un chemin pour Leed"
+                    "en": "Choose a path for Piwik",
+		    "fr": "Choisissez un chemin pour Piwik"
                 },
-                "example": "/leed",
-                "default": "/leed"
+                "example": "/piwik",
+                "default": "/piwik"
             },
 	    {
 		"name": "admin",
 		"ask": {
-		    "en": "Choose the Leed administrator (must be an existing YunoHost user)",
-		    "fr": "Choisissez un administrateur Leed (doit être un utilisateur YunoHost)"
+		    "en": "Choose the Piwik administrator (must be an existing YunoHost user)",
+		    "fr": "Choisissez un administrateur Piwik (doit être un utilisateur YunoHost)"
 		},
-		"example": "john"
-	    },
-	    {
-		"name": "password",
-		"ask": {
-		    "en": "Set the administrator password Leed",
- 			"fr": "Définissez le mot de passe administrateur de Leed"
-		},
-		"example": "Choose a password"
-	    },
-	    {
-		"name": "language",
-		"ask": {
-		    "en": "Choose your agregator's language",
-		    "fr": "Choisissez la langue de votre agrégateur"
-		},
-		"choices" : ["en", "fr", "es"],
-		"default" : "en"
-	    },
-		{
-			"name": "is_public",
-			"ask": {
-				"en": "Is it a public website ?",
-				"fr": "Est-ce un site public ?"
-			},
-			"choices": ["Yes", "No"],
-			"default": "No"
-		}
+		"example": "john",
+        "default": "mcrudelis"
+	    }
         ]
     }
 }
