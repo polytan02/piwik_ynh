@@ -49,6 +49,8 @@ sudo chown -R www-data: $final_path
 # Change variables in nginx configuration
 sudo sed -i "s@PATHTOCHANGE@$path@g" /etc/nginx/conf.d/$domain.d/piwik.conf
 sudo sed -i "s@ALIASTOCHANGE@$final_path/@g" /etc/nginx/conf.d/$domain.d/piwik.conf
+sudo sed -i "s@NAMETOCHANGE@piwik/@g" /etc/nginx/conf.d/$domain.d/piwik.conf
+
 
 # Rend la page d'install publique pour curl
 sudo yunohost app setting piwik skipped_uris -v "/"
