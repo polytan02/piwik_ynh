@@ -6,13 +6,13 @@ ENABLE_BOTS=1			# Track bots. All bot visits will have a Custom Variable set wit
 ENABLE_HTTP_ERRORS=1	# Track HTTP errors (status code 4xx or 5xx)
 ENABLE_HTTP_REDIRECTS=1	# Track HTTP redirects (status code 3xx except 304)
 
-DOMAIN=__DOMAIN__
-PIWIK_PATH=__PIWIK_PATH__
-PIWIK_PATH=__FINALPATH__
+DOMAIN="__DOMAIN__"
+PIWIK_PATH="__PIWIK_PATH__"
+PIWIK_DIR="__FINALPATH__"
 
 # Récupération des identifiants de la bdd de piwik
-db_user=$(cat $PIWIK_PATH/config/config.ini.php | grep username | cut -d "\"" -f 2)
-db_pwd=$(cat $PIWIK_PATH/config/config.ini.php | grep password | cut -d "\"" -f 2)
+db_user=$(cat $PIWIK_DIR/config/config.ini.php | grep username | cut -d "\"" -f 2)
+db_pwd=$(cat $PIWIK_DIR/config/config.ini.php | grep password | cut -d "\"" -f 2)
 
 # Traitement de chaque domaine de Yunohost
 for DOMAIN_TRACK in `ls -1d /etc/nginx/conf.d/*.d/ | cut -d "/" -f 5`
@@ -32,7 +32,7 @@ do
 		for TYPE_LOG in 'access' 'error'
 		do
 			# Appel du script d'extraction du log, chargé de dissocier la partie non lue du log
-			$PIWIK_PATH/misc/log-analytics/extract_log.sh /var/log/nginx/$DOMAIN_TRACK-$TYPE_LOG.log
+			$PIWIK_DIR/misc/log-analytics/extract_log.sh /var/log/nginx/$DOMAIN_TRACK-$TYPE_LOG.log
 			# Appel du script python
 			if [ $ENABLE_STATIC = 1 ]
 			then
@@ -58,7 +58,7 @@ do
 			else
 				ENABLE_HTTP_REDIRECTS=" "
 			fi
- 			$PIWIK_PATH/misc/log-analytics/import_logs.py --url=https://$DOMAIN$PIWIK_PATH/log_analyse_alias log_rewrite.log --idsite=$IDSITE --token-auth=$TOKEN --log-format-name=ncsa_extended $ENABLE_STATIC $ENABLE_BOTS $ENABLE_HTTP_ERRORS $ENABLE_HTTP_REDIRECTS --dry-run -d
+ 			$PIWIK_DIR/misc/log-analytics/import_logs.py --url=https://$DOMAIN$PIWIK_PATH/log_analyse_alias $PIWIK_DIR/misc/log-analytics/log_rewrite.log --idsite=$IDSITE --token-auth=$TOKEN --log-format-name=ncsa_extended $ENABLE_STATIC $ENABLE_BOTS $ENABLE_HTTP_ERRORS $ENABLE_HTTP_REDIRECTS -d
 		done
 	fi
 done
