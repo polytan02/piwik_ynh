@@ -1,10 +1,10 @@
 #!/bin/bash
 
-$PIWIK_PATH=__FINALPATH__
-LOG_FILE_SOURCE=$1
-LOG_FILE_CIBLE=$PIWIK_PATH/misc/log-analytics/log_rewrite.log
-LAST_ENTRY_FILE=$PIWIK_PATH/misc/log-analytics/$(basename $1 .log)_last_entry
-LAST_ENTRY=$(cat $LAST_ENTRY_FILE)
+PIWIK_PATH="__FINALPATH__"
+LOG_FILE_SOURCE="$1"
+LOG_FILE_CIBLE="$PIWIK_PATH/misc/log-analytics/log_rewrite.log"
+LAST_ENTRY_FILE="$PIWIK_PATH/misc/log-analytics/$(basename $1 .log)_last_entry"
+LAST_ENTRY="$(cat $LAST_ENTRY_FILE)"
 LAST_ENTRY_OK=0
 
 echo -n > $LOG_FILE_CIBLE	# Efface le contenu du nouveau log à destination de piwik
