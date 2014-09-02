@@ -2,13 +2,13 @@
     "name": "Piwik",
     "id": "piwik",
     "description": {
-        "en": "EN COURS",
-	"fr": "EN COURS"
+        "en": "Measurement Software web statistics to analyze traffic to your sites.",
+	"fr": "Logiciel de mesure de statistiques web, pour analyser le trafic de vos sites."
     },
     "developer": {
         "name": "Maniack Crudelis",
         "email": "maniack@crudelis.fr",
-        "url": "A AJOUTER"
+        "url": "http://piwik.org/"
     },
     "multi_instance": "false",
     "arguments": {
@@ -20,7 +20,7 @@
 		    "fr": "Choisissez un domaine pour Piwik"
                 },
                 "example": "domain.org",
-                "default": "crudelis-test.fr"
+"default": "crudelis-test.fr"
             },
             {
                 "name": "path",
@@ -38,7 +38,25 @@
 		    "fr": "Choisissez un administrateur Piwik (doit être un utilisateur YunoHost)"
 		},
 		"example": "john",
-        "default": "mcrudelis"
+"default": "mcrudelis"
+	    },
+	    {
+		"name": "option",
+		"ask": {
+		    "en": "Activate the plugin geolocation of visitors.",
+		    "fr": "Activer le plugin de géolocalisation des visiteurs."
+		},
+		"choices": ["Yes", "No"],
+		"default": "Yes"
+	    },
+	    {
+		"name": "option",
+		"ask": {
+		    "en": "Enable the analysis of server logs.",
+		    "fr": "Activer l'analyse des log du serveur."
+		},
+		"choices": ["Yes", "No"],
+		"default": "Yes"
 	    }
         ]
     }
