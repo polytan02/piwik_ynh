@@ -23,8 +23,9 @@ fi
 
 # Add settings to YunoHost
 sudo yunohost app setting piwik admin -v $admin
-#; sudo yunohost app setting piwik language -v $language
 sudo yunohost app setting piwik domain -v $domain
+sudo yunohost app setting piwik geoip_plugin -v $geoip_plugin
+sudo yunohost app setting piwik log_analyse -v $log_analyse
 
 
 # Generate random password
@@ -35,6 +36,7 @@ db_user=piwik
 
 # Initialize database and store mysql password for upgrade
 sudo yunohost app initdb $db_user -p $db_pwd
+sudo yunohost app setting piwik db_user -v $db_user
 sudo yunohost app setting piwik mysqlpwd -v $db_pwd
 
 
@@ -116,7 +118,7 @@ mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "UPDATE piwik.piwik_user
 mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "DELETE FROM piwik.piwik_user WHERE piwik_user.login = 'adminP'"
 
 
-if [ "$geoip_plugin" = "Yes" ];
+if [ "$geoip_plugin" = "Yes" ]
 then
     # Configuration de la géolocalisation par GeoIP PECL
     # Installation des paquets nécessaires à GeoIP
@@ -144,7 +146,7 @@ then
 fi
 
 
-if [ "$log_analyse" = "Yes" ];
+if [ "$log_analyse" = "Yes" ]
 then
     # Mise en place d'une tâche sur www-data pour l'analyse de log nginx
     sudo crontab -u www-data -l > crontab_file
@@ -159,13 +161,12 @@ fi
 
 
 # Files owned by root, www-data can just read
-sudo find $final_path -type f ! -perm -ago+x | xargs sudo chmod 644		# Applique les permissions sur les fichiers n'ayant pas de droit d'execution (rw-r--r--)
-sudo find $final_path -type f -perm -ago+x | xargs sudo chmod 755		# Maintient les droits d'exec sur les fichiers ayant des droits d'executions, pour ne pas empêcher l'exécution des scripts nécessaires (rwxr-xr-x)
-sudo find $final_path -type d | xargs sudo chmod 755 # (rwxr-xr-x)
+sudo find $final_path -type f -print0 | xargs -0 sudo chmod 644		# Applique les permissions sur les fichiers (rw-r--r--)
+xargs -a ../conf/Liste_exec -I{} sudo chmod 554 "$final_path/{}"	# Maintient les droits d'exec sur les fichiers les nécessitant, pour ne pas empêcher l'exécution des scripts nécessaires (r-xr-xr--)
+sudo find $final_path -type d -print0 | xargs -0 sudo chmod 755 # (rwxr-xr-x)
 sudo chown -R root: $final_path
 # www-data can write on config/config.ini.php, plugins, misc and tmp
 sudo chown -R www-data $final_path/config/config.ini.php $final_path/plugins $final_path/misc $final_path/tmp
-
 
 # Retire l'autorisation d'accès public de piwik
 sudo yunohost app setting piwik skipped_uris -d
