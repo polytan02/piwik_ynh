@@ -19,7 +19,7 @@
                     "en": "Choose a domain for Piwik",
 		    "fr": "Choisissez un domaine pour Piwik"
                 },
-                "example": "domain.org",
+                "example": "domain.org"
             },
             {
                 "name": "path",
@@ -36,7 +36,7 @@
 		    "en": "Choose the Piwik administrator (must be an existing YunoHost user)",
 		    "fr": "Choisissez un administrateur Piwik (doit être un utilisateur YunoHost)"
 		},
-		"example": "john",
+		"example": "john"
 	    },
 	    {
 		"name": "option_geoip",
