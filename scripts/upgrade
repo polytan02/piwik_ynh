@@ -1,42 +1,72 @@
 #!/bin/bash
 
 # Retrieve arguments
-domain=$(sudo yunohost app setting leed domain)
-path=$(sudo yunohost app setting leed path)
-is_public=$(sudo yunohost app setting leed is_public)
+root_pwd=$(sudo cat /etc/yunohost/mysql)
+domain=$(sudo yunohost app setting piwik domain)
+admin=$(sudo yunohost app setting piwik admin)
+path=$(sudo yunohost app setting piwik path)
+geoip_plugin=$(sudo yunohost app setting piwik geoip_plugin)
+$db_user=$(sudo yunohost app setting piwik db_user)
+$db_pwd=$(sudo yunohost app setting piwik db_pwd)
+
+# Change variables in nginx configuration
+final_path=/var/www/piwik
+sudo sed -i "s@PATHTOCHANGE@$path@g" ../conf/nginx.conf
+sudo sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf
+sudo sed -i "s@NAMETOCHANGE@piwik@g" ../conf/nginx.conf
 
 # Copy files to right place
-final_path=/var/www/leed
 sudo mkdir -p $final_path
-sudo cp -a ../sources/* $final_path
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/leed.conf
+sudo cp -a ../sources/sources/* $final_path
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/piwik.conf
 
-# Set right permissions
-sudo chown -R www-data: $final_path
+# Modify php-fpm pool configuration and copy it to php-fpm pool directory for piwik
+sed -i "s@__NAMETOCHANGE__@piwik@g" ../conf/php-fpm.conf
+sed -i "s@__FINALPATH__@$final_path@g" ../conf/php-fpm.conf
+sed -i "s@__FINALPATH__@$final_path@g" ../conf/php-fpm.ini
+finalphpconf=/etc/php5/fpm/pool.d/piwik.conf
+sudo cp ../conf/php-fpm.conf $finalphpconf
+sudo chown root: $finalphpconf
+sudo /etc/init.d/php5-fpm reload
 
-# Change variables in Leed configuration
-sudo sed -i "s@PATHTOCHANGE@$path@g" /etc/nginx/conf.d/$domain.d/leed.conf
-sudo sed -i "s@ALIASTOCHANGE@$final_path/@g" /etc/nginx/conf.d/$domain.d/leed.conf
+# Reload Nginx
+sudo service nginx reload
 
-# Files owned by root, www-data can just read
-sudo find $final_path -type f | xargs sudo chmod 644
-sudo find $final_path -type d | xargs sudo chmod 755
-sudo chown -R root: $final_path
-# www-data can write on plugins and cache
-sudo chown -R www-data $final_path/cache $final_path/plugins
+# Change variables in piwik configuration
+sed -i "s@__DBUSER__@$db_user@g" ../sources/ajouts/config/config.ini.php
+sed -i "s@__DBPWD__@$db_pwd@g" ../sources/ajouts/config/config.ini.php
+salt=$(cat "$final_path/config/config.ini.php" | grep salt | cut -d "\"" -f 2)
+sed -i "s@__SALT__@$salt@g" ../sources/ajouts/config/config.ini.php
+sed -i "s@__DOMAIN__@$domain@g" ../sources/ajouts/config/config.ini.php
 
-# Make app private if necessary
-sudo yunohost app setting leed is_public -v "$is_public"
-if [ "$is_public" = "No" ];
+sed -i "s@__FINALPATH__@$final_path@g" ../sources/ajouts/misc/geoip/maj_geoip.sh
+sed -i "s@__DOMAIN__@$domain@g" ../sources/ajouts/misc/log-analytics/manage_import.sh
+sed -i "s@__PIWIK_PATH__@$path@g" ../sources/ajouts/misc/log-analytics/manage_import.sh
+sed -i "s@__FINALPATH__@$final_path@g" ../sources/ajouts/misc/log-analytics/manage_import.sh
+sed -i "s@__FINALPATH__@$final_path@g" ../sources/ajouts/misc/log-analytics/extract_log.sh
+
+# Copy supplementary files to right place
+sudo cp -a ../sources/ajouts/* $final_path
+
+if [ "$geoip_plugin" = "Yes" ]
 then
-	# Retire l'autorisation d'accès de la page d'install.
-	sudo yunohost app setting leed unprotected_uris -d
-	# Rend la page d'actualisation accessible pour le script cron.
-	sudo yunohost app setting leed skipped_uris -v "/action.php"
-else	# Si l'app est publique
-	sudo yunohost app setting leed unprotected_uris -v "/"
+	# Mise en place du php.ini dédié.
+	finalphpini=/etc/php5/fpm/conf.d/20-piwik.ini
+	sudo cp ../conf/php-fpm.ini $finalphpini
+	sudo chown root: $finalphpini
+	sudo /etc/init.d/php5-fpm reload
 fi
 
-# Reload Nginx and regenerate SSOwat conf
-sudo service nginx reload
+# Files owned by root, www-data can just read
+sudo find $final_path -type f -print0 | xargs -0 sudo chmod 644		# Applique les permissions sur les fichiers (rw-r--r--)
+xargs -a ../conf/Liste_exec -I{} sudo chmod 554 "$final_path/{}"	# Maintient les droits d'exec sur les fichiers les nécessitant, pour ne pas empêcher l'exécution des scripts nécessaires (r-xr-xr--)
+sudo find $final_path -type d -print0 | xargs -0 sudo chmod 755 # (rwxr-xr-x)
+sudo chown -R root: $final_path
+# www-data can write on config/config.ini.php, plugins, misc and tmp
+sudo chown -R www-data $final_path/config/config.ini.php $final_path/plugins $final_path/misc $final_path/tmp
+
+# Retire l'autorisation d'accès public de piwik
+sudo yunohost app setting piwik skipped_uris -d
+# Garde public l'alias nginx dédié à l'accès du script pour l'analyse de log
+sudo yunohost app setting piwik skipped_uris -v "/local_alias"
 sudo yunohost app ssowatconf
