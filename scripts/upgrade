@@ -57,13 +57,11 @@ then
 	sudo /etc/init.d/php5-fpm reload
 fi
 
-# Files owned by root, www-data can just read
+# Files owned by www-data, for upgrade
 sudo find $final_path -type f -print0 | xargs -0 sudo chmod 644		# Applique les permissions sur les fichiers (rw-r--r--)
 xargs -a ../conf/Liste_exec -I{} sudo chmod 554 "$final_path/{}"	# Maintient les droits d'exec sur les fichiers les nécessitant, pour ne pas empêcher l'exécution des scripts nécessaires (r-xr-xr--)
 sudo find $final_path -type d -print0 | xargs -0 sudo chmod 755 # (rwxr-xr-x)
-sudo chown -R root: $final_path
-# www-data can write on config/config.ini.php, plugins, misc and tmp
-sudo chown -R www-data $final_path/config/config.ini.php $final_path/plugins $final_path/misc $final_path/tmp
+sudo chown -R www-data:root $final_path
 
 # Retire l'autorisation d'accès public de piwik
 sudo yunohost app setting piwik skipped_uris -d
