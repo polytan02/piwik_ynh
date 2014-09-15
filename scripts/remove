@@ -21,22 +21,14 @@ then
 	# Suppression du config ini php-fpm
 	sudo rm -f /etc/php5/fpm/conf.d/20-piwik.ini
 
-	# Retirer les lignes du crontab pour geoip
- 	path_no_slash=$(echo $path | cut -d '/' -f 2)
-	sudo crontab -l -u www-data | sudo tee crontab_file
-	sudo sed -i "/base de donnée GeoIP pour piwik/d" crontab_file
-	sudo sed -i "/$path_no_slash\/misc\/geoip\/maj_geoip.sh/d" crontab_file
-	sudo crontab -u www-data crontab_file
+	# Retirer le cron pour geoip
+	sudo rm -f /etc/cron.d/piwik_geoip
 fi
 
 if [ "$log_analyse" = "Yes" ]
 then
-	# Retirer les lignes du crontab pour log_analitics
- 	path_no_slash=$(echo $path | cut -d '/' -f 2)
-	sudo crontab -l -u www-data | sudo tee crontab_file
-	sudo sed -i "/logs nginx pour piwik/d" crontab_file
-	sudo sed -i "/$path_no_slash\/misc\/log-analytics\/manage_import.sh/d" crontab_file
-	sudo crontab -u www-data crontab_file
+	# Retirer le cron pour geoip
+	sudo rm -f /etc/cron.d/piwik_loganalytics
 
     # Retirer la commande dans le logrotate
 	sudo sed -i "/$path_no_slash\/misc\/log-analytics\/manage_import.sh/d" /etc/logrotate.d/nginx
