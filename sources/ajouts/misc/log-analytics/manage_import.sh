@@ -58,7 +58,7 @@ do
 			else
 				ENABLE_HTTP_REDIRECTS=" "
 			fi
- 			$PIWIK_DIR/misc/log-analytics/import_logs.py --url=https://$DOMAIN$PIWIK_PATH/log_analyse_alias $PIWIK_DIR/misc/log-analytics/log_rewrite.log --idsite=$IDSITE --token-auth=$TOKEN --log-format-name=ncsa_extended $ENABLE_STATIC $ENABLE_BOTS $ENABLE_HTTP_ERRORS $ENABLE_HTTP_REDIRECTS -d
+ 			$PIWIK_DIR/misc/log-analytics/import_logs.py --url=https://$DOMAIN$PIWIK_PATH/local_alias $PIWIK_DIR/misc/log-analytics/log_rewrite.log --idsite=$IDSITE --token-auth=$TOKEN --log-format-name=ncsa_extended $ENABLE_STATIC $ENABLE_BOTS $ENABLE_HTTP_ERRORS $ENABLE_HTTP_REDIRECTS -d
 		done
 	fi
 done
