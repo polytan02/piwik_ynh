@@ -5,6 +5,7 @@
         "en": "Measurement Software web statistics to analyze traffic to your sites.",
 	"fr": "Logiciel de mesure de statistiques web, pour analyser le trafic de vos sites."
     },
+    "license": "GPL-3",
     "developer": {
         "name": "Maniack Crudelis",
         "email": "maniack@crudelis.fr",
