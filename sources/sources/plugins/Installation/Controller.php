@@ -29,6 +29,7 @@ use Piwik\Plugins\UserCountry\LocationProvider;
 use Piwik\Plugins\UsersManager\API as APIUsersManager;
 use Piwik\ProxyHeaders;
 use Piwik\SettingsPiwik;
+use Piwik\Tracker\TrackerCodeGenerator;
 use Piwik\Updater;
 use Piwik\Url;
 use Piwik\Version;
@@ -84,7 +85,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         // Delete merged js/css files to force regenerations based on updated activated plugin list
         Filesystem::deleteAllCacheOnUpdate();
 
-        if(empty($message)) {
+        if (empty($message)) {
             $this->checkPiwikIsNotInstalled();
         }
         $view = new View(
@@ -196,14 +197,16 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
             $view->tablesInstalled     = implode(', ', $tablesInstalled);
             $view->someTablesInstalled = true;
 
-            Access::getInstance();
-            Piwik::setUserHasSuperUserAccess();
-            if ($this->hasEnoughTablesToReuseDb($tablesInstalled) &&
-                count(APISitesManager::getInstance()->getAllSitesId()) > 0 &&
-                count(APIUsersManager::getInstance()->getUsers()) > 0
-            ) {
-                $view->showReuseExistingTables = true;
-            }
+            $self = $this;
+            Access::doAsSuperUser(function () use ($self, $tablesInstalled, $view) {
+                Access::getInstance();
+                if ($self->hasEnoughTablesToReuseDb($tablesInstalled) &&
+                    count(APISitesManager::getInstance()->getAllSitesId()) > 0 &&
+                    count(APIUsersManager::getInstance()->getUsers()) > 0
+                ) {
+                    $view->showReuseExistingTables = true;
+                }
+            });
         } else {
 
             DbHelper::createTables();
@@ -234,7 +237,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         );
 
         $result = $this->updateComponents();
-        if($result === false) {
+        if ($result === false) {
             $this->redirectToNextStep('tablesCreation');
         }
 
@@ -258,8 +261,11 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     {
         $this->checkPiwikIsNotInstalled();
 
-        $this->initObjectsToCallAPI();
-        if(count(APIUsersManager::getInstance()->getUsersHavingSuperUserAccess()) > 0) {
+        $superUserAlreadyExists = Access::doAsSuperUser(function () {
+            return count(APIUsersManager::getInstance()->getUsersHavingSuperUserAccess()) > 0;
+        });
+
+        if ($superUserAlreadyExists) {
             $this->redirectToNextStep('setupSuperUser');
         }
 
@@ -301,9 +307,11 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     {
         $this->checkPiwikIsNotInstalled();
 
-        $this->initObjectsToCallAPI();
+        $siteIdsCount = Access::doAsSuperUser(function () {
+            return count(APISitesManager::getInstance()->getAllSitesId());
+        });
 
-        if(count(APISitesManager::getInstance()->getAllSitesId()) > 0) {
+        if ($siteIdsCount > 0) {
             // if there is a already a website, skip this step and trackingCode step
             $this->redirectToNextStep('trackingCode');
         }
@@ -317,12 +325,15 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         $form = new FormFirstWebsiteSetup();
 
         if ($form->validate()) {
-            $name = Common::unsanitizeInputValue($form->getSubmitValue('siteName'));
+            $name = Common::sanitizeInputValue($form->getSubmitValue('siteName'));
             $url = Common::unsanitizeInputValue($form->getSubmitValue('url'));
             $ecommerce = (int)$form->getSubmitValue('ecommerce');
 
             try {
-                $result = APISitesManager::getInstance()->addSite($name, $url, $ecommerce);
+                $result = Access::doAsSuperUser(function () use ($name, $url, $ecommerce) {
+                    return APISitesManager::getInstance()->addSite($name, $url, $ecommerce);
+                });
+
                 $params = array(
                     'site_idSite' => $result,
                     'site_name' => urlencode($name)
@@ -336,7 +347,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         }
 
         // Display previous step success message, when current step form was not submitted yet
-        if(count($form->getErrorMessages()) == 0) {
+        if (count($form->getErrorMessages()) == 0) {
             $view->displayGeneralSetupSuccess = true;
         }
 
@@ -365,7 +376,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         // Load the Tracking code and help text from the SitesManager
         $viewTrackingHelp = new \Piwik\View('@SitesManager/_displayJavascriptCode');
         $viewTrackingHelp->displaySiteName = $siteName;
-        $viewTrackingHelp->jsTag = Piwik::getJavascriptCode($idSite, Url::getCurrentUrlWithoutFileName());
+        $javascriptGenerator = new TrackerCodeGenerator();
+        $viewTrackingHelp->jsTag = $javascriptGenerator->generate($idSite, Url::getCurrentUrlWithoutFileName());
         $viewTrackingHelp->idSite = $idSite;
         $viewTrackingHelp->piwikUrl = Url::getCurrentUrlWithoutFileName();
 
@@ -454,21 +466,13 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
      */
     public function getBaseCss()
     {
-        @header('Content-Type: text/css');
+        Common::sendHeader('Content-Type: text/css');
         return AssetManager::getInstance()->getCompiledBaseCss()->getContent();
     }
 
     private function getParam($name)
     {
         return Common::getRequestVar($name, false, 'string');
-    }
-
-    /**
-     * Instantiate access and log objects
-     */
-    private function initObjectsToCallAPI()
-    {
-        Piwik::setUserHasSuperUserAccess();
     }
 
     /**
@@ -513,7 +517,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
 
     private function checkPiwikIsNotInstalled()
     {
-        if(!SettingsPiwik::isPiwikInstalled()) {
+        if (!SettingsPiwik::isPiwikInstalled()) {
             return;
         }
         \Piwik\Plugins\Login\Controller::clearSession();
@@ -633,13 +637,12 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
 
     private function createSuperUser($login, $password, $email)
     {
-        $this->initObjectsToCallAPI();
-
-        $api = APIUsersManager::getInstance();
-        $api->addUser($login, $password, $email);
-
-        $this->initObjectsToCallAPI();
-        $api->setSuperUserAccess($login, true);
+        $self = $this;
+        Access::doAsSuperUser(function () use ($self, $login, $password, $email) {
+            $api = APIUsersManager::getInstance();
+            $api->addUser($login, $password, $email);
+            $api->setSuperUserAccess($login, true);
+        });
     }
 
     private function hasEnoughTablesToReuseDb($tablesInstalled)
@@ -658,7 +661,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     private function deleteConfigFileIfNeeded()
     {
         $config = Config::getInstance();
-        if($config->existsLocalConfig()) {
+        if ($config->existsLocalConfig()) {
             $config->deleteLocalConfig();
         }
     }
@@ -702,16 +705,16 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     protected function updateComponents()
     {
         Access::getInstance();
-        Piwik::setUserHasSuperUserAccess();
 
-        $updater = new Updater();
-        $componentsWithUpdateFile = CoreUpdater::getComponentUpdates($updater);
+        return Access::doAsSuperUser(function () {
+            $updater = new Updater();
+            $componentsWithUpdateFile = CoreUpdater::getComponentUpdates($updater);
 
-        if (empty($componentsWithUpdateFile)) {
-            return false;
-        }
-        $result = CoreUpdater::updateComponents($updater, $componentsWithUpdateFile);
-        return $result;
+            if (empty($componentsWithUpdateFile)) {
+                return false;
+            }
+            $result = CoreUpdater::updateComponents($updater, $componentsWithUpdateFile);
+            return $result;
+        });
     }
-
 }

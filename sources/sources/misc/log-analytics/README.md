@@ -20,7 +20,7 @@ and will not track bots, static files, or error requests.
 
 If you wish to track all requests the following command would be used:
 
-    python /path/to/piwik/misc/log-analytics/import_logs.py --url=http://mysite/piwik/ access.log --idsite=1234 --recorders=4 --enable-http-errors --enable-http-redirects --enable-static --enable-bots
+    python /path/to/piwik/misc/log-analytics/import_logs.py --url=http://mysite/piwik/ --idsite=1234 --recorders=4 --enable-http-errors --enable-http-redirects --enable-static --enable-bots access.log 
 
 ## How to import your logs automatically every day?
 
@@ -247,6 +247,20 @@ exec python /path/to/misc/log-analytics/import_logs.py \
  --url=http://localhost/ --token-auth=<your_auth_token> \
  --idsite=1 --recorders=4 --enable-http-errors --enable-http-redirects --enable-static --enable-bots \
  --log-format-name=nginx_json -
+```
+
+# regex example for syslog format (centralized logs)
+
+## log format exemple
+
+```
+Aug 31 23:59:59 tt-srv-name www.tt.com: 1.1.1.1 - - [31/Aug/2014:23:59:59 +0200] "GET /index.php HTTP/1.0" 200 3838 "http://www.tt.com/index.php" "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Firefox/31.0" 365020 www.tt.com
+```
+
+## Corresponding regex
+
+```
+--log-format-regex='.* ((?P<ip>\S+) \S+ \S+ \[(?P<date>.*?) (?P<timezone>.*?)\] "\S+ (?P<path>.*?) \S+" (?P<status>\S+) (?P<length>\S+) "(?P<referrer>.*?)" "(?P<user_agent>.*?)").*'
 ```
 
 And that's all !

@@ -62,6 +62,7 @@ class DataArray
         return array(Metrics::INDEX_NB_UNIQ_VISITORS    => 0,
                      Metrics::INDEX_NB_VISITS           => 0,
                      Metrics::INDEX_NB_ACTIONS          => 0,
+                     Metrics::INDEX_NB_USERS            => 0,
                      Metrics::INDEX_MAX_ACTIONS         => 0,
                      Metrics::INDEX_SUM_VISIT_LENGTH    => 0,
                      Metrics::INDEX_BOUNCE_COUNT        => 0,
@@ -90,6 +91,7 @@ class DataArray
             if ($onlyMetricsAvailableInActionsTable) {
                 return;
             }
+            $oldRowToUpdate[Metrics::INDEX_NB_USERS] += $newRowToAdd['nb_users'];
             $oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS] = (float)max($newRowToAdd['max_actions'], $oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS]);
             $oldRowToUpdate[Metrics::INDEX_SUM_VISIT_LENGTH] += $newRowToAdd['sum_visit_length'];
             $oldRowToUpdate[Metrics::INDEX_BOUNCE_COUNT] += $newRowToAdd['bounce_count'];
@@ -106,16 +108,20 @@ class DataArray
 
         // In case the existing Row had no action metrics (eg. Custom Variable XYZ with "visit" scope)
         // but the new Row has action metrics (eg. same Custom Variable XYZ this time with a "page" scope)
-        if(!isset($oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS])) {
-            $toZero = array(Metrics::INDEX_MAX_ACTIONS,
+        if (!isset($oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS])) {
+            $toZero = array(
+                            Metrics::INDEX_NB_USERS,
+                            Metrics::INDEX_MAX_ACTIONS,
                             Metrics::INDEX_SUM_VISIT_LENGTH,
                             Metrics::INDEX_BOUNCE_COUNT,
-                            Metrics::INDEX_NB_VISITS_CONVERTED);
+                            Metrics::INDEX_NB_VISITS_CONVERTED
+            );
             foreach($toZero as $metric) {
                 $oldRowToUpdate[$metric] = 0;
             }
         }
 
+        $oldRowToUpdate[Metrics::INDEX_NB_USERS] += $newRowToAdd[Metrics::INDEX_NB_USERS];
         $oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS] = (float)max($newRowToAdd[Metrics::INDEX_MAX_ACTIONS], $oldRowToUpdate[Metrics::INDEX_MAX_ACTIONS]);
         $oldRowToUpdate[Metrics::INDEX_SUM_VISIT_LENGTH] += $newRowToAdd[Metrics::INDEX_SUM_VISIT_LENGTH];
         $oldRowToUpdate[Metrics::INDEX_BOUNCE_COUNT] += $newRowToAdd[Metrics::INDEX_BOUNCE_COUNT];
@@ -244,8 +250,8 @@ class DataArray
         $oldRowToUpdate[Metrics::INDEX_EVENT_MAX_EVENT_VALUE] = round(max($newRowToAdd[Metrics::INDEX_EVENT_MAX_EVENT_VALUE], $oldRowToUpdate[Metrics::INDEX_EVENT_MAX_EVENT_VALUE]), self::EVENT_VALUE_PRECISION);
 
         // Update minimum only if it is set
-        if($newRowToAdd[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] !== false) {
-            if($oldRowToUpdate[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] === false) {
+        if ($newRowToAdd[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] !== false) {
+            if ($oldRowToUpdate[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] === false) {
                 $oldRowToUpdate[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] = round($newRowToAdd[Metrics::INDEX_EVENT_MIN_EVENT_VALUE], self::EVENT_VALUE_PRECISION);
             } else {
                 $oldRowToUpdate[Metrics::INDEX_EVENT_MIN_EVENT_VALUE] = round(min($newRowToAdd[Metrics::INDEX_EVENT_MIN_EVENT_VALUE], $oldRowToUpdate[Metrics::INDEX_EVENT_MIN_EVENT_VALUE]), self::EVENT_VALUE_PRECISION);
@@ -357,7 +363,7 @@ class DataArray
 
             // if there are no "visit" column, we force one to prevent future complications
             // eg. This helps the setDefaultColumnsToDisplay() call
-            if(!isset($values[Metrics::INDEX_NB_VISITS])) {
+            if (!isset($values[Metrics::INDEX_NB_VISITS])) {
                 $values[Metrics::INDEX_NB_VISITS] = 0;
             }
         }

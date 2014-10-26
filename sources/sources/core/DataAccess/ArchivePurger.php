@@ -22,39 +22,74 @@ use Piwik\Piwik;
  */
 class ArchivePurger
 {
+    public static function purgeInvalidatedArchives()
+    {
+        $archiveTables = ArchiveTableCreator::getTablesArchivesInstalled();
+
+        foreach ($archiveTables as $archiveTable) {
+            /**
+             * Select the archives that have already been invalidated and have been since re-processed.
+             * It purges records for each distinct { archive name (includes segment hash) , idsite, date, period } tuple.
+             */
+            $result = self::getModel()->purgeInvalidatedArchiveTable($archiveTable);
+
+            if (count($result) > 0) {
+                $archiveIds = array_map(
+                    function ($elm) {
+                        return $elm['idarchive'];
+                    },
+                    $result
+                );
+
+                $date = ArchiveTableCreator::getDateFromTableName($archiveTable);
+                $date = Date::factory(str_replace('_', '-', $date) . '-01');
+
+                self::deleteArchiveIds($date, $archiveIds);
+            }
+
+        }
+    }
+
+    private static function getModel()
+    {
+        return new Model();
+    }
+
     public static function purgeOutdatedArchives(Date $dateStart)
     {
         $purgeArchivesOlderThan = Rules::shouldPurgeOutdatedArchives($dateStart);
+
         if (!$purgeArchivesOlderThan) {
             return;
         }
 
         $idArchivesToDelete = self::getTemporaryArchiveIdsOlderThan($dateStart, $purgeArchivesOlderThan);
+
         if (!empty($idArchivesToDelete)) {
             self::deleteArchiveIds($dateStart, $idArchivesToDelete);
         }
+
         self::deleteArchivesWithPeriodRange($dateStart);
 
         Log::debug("Purging temporary archives: done [ purged archives older than %s in %s ] [Deleted IDs: %s]",
-            $purgeArchivesOlderThan, $dateStart->toString("Y-m"), implode(',', $idArchivesToDelete));
+                   $purgeArchivesOlderThan,
+                   $dateStart->toString("Y-m"),
+                   implode(',', $idArchivesToDelete));
     }
 
     protected static function getTemporaryArchiveIdsOlderThan(Date $date, $purgeArchivesOlderThan)
     {
-        $query = "SELECT idarchive
-                FROM " . ArchiveTableCreator::getNumericTable($date) . "
-                WHERE name LIKE 'done%'
-                    AND ((  value = " . ArchiveWriter::DONE_OK_TEMPORARY . "
-                            AND ts_archived < ?)
-                         OR value = " . ArchiveWriter::DONE_ERROR . ")";
+        $archiveTable = ArchiveTableCreator::getNumericTable($date);
 
-        $result = Db::fetchAll($query, array($purgeArchivesOlderThan));
+        $result = self::getModel()->getTemporaryArchivesOlderThan($archiveTable, $purgeArchivesOlderThan);
+
         $idArchivesToDelete = array();
         if (!empty($result)) {
             foreach ($result as $row) {
                 $idArchivesToDelete[] = $row['idarchive'];
             }
         }
+
         return $idArchivesToDelete;
     }
 
@@ -63,34 +98,25 @@ class ArchivePurger
      */
     protected static function deleteArchivesWithPeriodRange(Date $date)
     {
-        $query = "DELETE FROM %s WHERE period = ? AND ts_archived < ?";
-
-        $yesterday = Date::factory('yesterday')->getDateTime();
-        $bind = array(Piwik::$idPeriods['range'], $yesterday);
         $numericTable = ArchiveTableCreator::getNumericTable($date);
-        Db::query(sprintf($query, $numericTable), $bind);
-        Log::debug("Purging Custom Range archives: done [ purged archives older than %s from %s / blob ]", $yesterday, $numericTable);
-        try {
-            Db::query(sprintf($query, ArchiveTableCreator::getBlobTable($date)), $bind);
-        } catch (Exception $e) {
-            // Individual blob tables could be missing
-        }
+        $blobTable    = ArchiveTableCreator::getBlobTable($date);
+        $yesterday    = Date::factory('yesterday')->getDateTime();
+
+        Log::debug("Purging Custom Range archives: done [ purged archives older than %s from %s / blob ]",
+                   $yesterday, $numericTable);
+
+        self::getModel()->deleteArchivesWithPeriodRange($numericTable, $blobTable, Piwik::$idPeriods['range'], $yesterday);
     }
 
     protected static function deleteArchiveIds(Date $date, $idArchivesToDelete)
     {
-        $batches = array_chunk($idArchivesToDelete, 1000);
-        foreach($batches as $idsToDelete) {
-            $query = "DELETE FROM %s WHERE idarchive IN (" . implode(',', $idsToDelete) . ")";
+        $batches      = array_chunk($idArchivesToDelete, 1000);
+        $numericTable = ArchiveTableCreator::getNumericTable($date);
+        $blobTable    = ArchiveTableCreator::getBlobTable($date);
 
-            Db::query(sprintf($query, ArchiveTableCreator::getNumericTable($date)));
-            try {
-                Db::query(sprintf($query, ArchiveTableCreator::getBlobTable($date)));
-            } catch (Exception $e) {
-                // Individual blob tables could be missing
-            }
+        foreach ($batches as $idsToDelete) {
+            self::getModel()->deleteArchiveIds($numericTable, $blobTable, $idsToDelete);
         }
-
     }
 
 }

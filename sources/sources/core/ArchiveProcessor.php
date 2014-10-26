@@ -10,6 +10,7 @@ namespace Piwik;
 
 use Exception;
 use Piwik\ArchiveProcessor\Parameters;
+use Piwik\ArchiveProcessor\Rules;
 use Piwik\DataAccess\ArchiveWriter;
 use Piwik\DataAccess\LogAggregator;
 use Piwik\DataTable\Manager;
@@ -78,12 +79,12 @@ class ArchiveProcessor
     /**
      * @var \Piwik\DataAccess\ArchiveWriter
      */
-    protected $archiveWriter;
+    private $archiveWriter;
 
     /**
      * @var \Piwik\DataAccess\LogAggregator
      */
-    protected $logAggregator;
+    private $logAggregator;
 
     /**
      * @var Archive
@@ -93,28 +94,43 @@ class ArchiveProcessor
     /**
      * @var Parameters
      */
-    protected $params;
+    private $params;
 
     /**
      * @var int
      */
-    protected $numberOfVisits = false;
-    protected $numberOfVisitsConverted = false;
+    private $numberOfVisits = false;
+
+    private $numberOfVisitsConverted = false;
+
+    /**
+     * If true, unique visitors are not calculated when we are aggregating data for multiple sites.
+     * The `[General] enable_processing_unique_visitors_multiple_sites` INI config option controls
+     * the value of this variable.
+     *
+     * @var bool
+     */
+    private $skipUniqueVisitorsCalculationForMultipleSites = true;
+
+    const SKIP_UNIQUE_VISITORS_FOR_MULTIPLE_SITES = 'enable_processing_unique_visitors_multiple_sites';
 
     public function __construct(Parameters $params, ArchiveWriter $archiveWriter)
     {
         $this->params = $params;
         $this->logAggregator = new LogAggregator($params);
         $this->archiveWriter = $archiveWriter;
+
+        $this->skipUniqueVisitorsCalculationForMultipleSites = Rules::shouldSkipUniqueVisitorsCalculationForMultipleSites();
     }
 
     protected function getArchive()
     {
-        if(empty($this->archive)) {
+        if (empty($this->archive)) {
             $subPeriods = $this->params->getSubPeriods();
-            $idSites = $this->params->getIdSites();
+            $idSites    = $this->params->getIdSites();
             $this->archive = Archive::factory($this->params->getSegment(), $subPeriods, $idSites);
         }
+
         return $this->archive;
     }
 
@@ -154,7 +170,8 @@ class ArchiveProcessor
      * @var array
      */
     protected static $columnsToRenameAfterAggregation = array(
-        Metrics::INDEX_NB_UNIQ_VISITORS => Metrics::INDEX_SUM_DAILY_NB_UNIQ_VISITORS
+        Metrics::INDEX_NB_UNIQ_VISITORS => Metrics::INDEX_SUM_DAILY_NB_UNIQ_VISITORS,
+        Metrics::INDEX_NB_USERS         => Metrics::INDEX_SUM_DAILY_NB_USERS,
     );
 
     /**
@@ -192,6 +209,7 @@ class ArchiveProcessor
         if (!is_array($recordNames)) {
             $recordNames = array($recordNames);
         }
+
         $nameToCount = array();
         foreach ($recordNames as $recordName) {
             $latestUsedTableId = Manager::getInstance()->getMostRecentTableId();
@@ -202,7 +220,7 @@ class ArchiveProcessor
             $nameToCount[$recordName]['level0'] = $rowsCount;
 
             $rowsCountRecursive = $rowsCount;
-            if($this->isAggregateSubTables()) {
+            if ($this->isAggregateSubTables()) {
                 $rowsCountRecursive = $table->getRowsCountRecursive();
             }
             $nameToCount[$recordName]['recursive'] = $rowsCountRecursive;
@@ -255,7 +273,7 @@ class ArchiveProcessor
 
     public function getNumberOfVisits()
     {
-        if($this->numberOfVisits === false) {
+        if ($this->numberOfVisits === false) {
             throw new Exception("visits should have been set here");
         }
         return $this->numberOfVisits;
@@ -327,7 +345,7 @@ class ArchiveProcessor
      */
     protected function aggregateDataTableRecord($name, $columnsAggregationOperation = null, $columnsToRenameAfterAggregation = null)
     {
-        if($this->isAggregateSubTables()) {
+        if ($this->isAggregateSubTables()) {
             // By default we shall aggregate all sub-tables.
             $dataTable = $this->getArchive()->getDataTableExpanded($name, $idSubTable = null, $depth = null, $addMetadataSubtableId = false);
         } else {
@@ -364,16 +382,23 @@ class ArchiveProcessor
 
     protected function enrichWithUniqueVisitorsMetric(Row $row)
     {
-        if(!$this->getParams()->isSingleSite() ) {
-            // we only compute unique visitors for a single site
+        // skip unique visitors metrics calculation if calculating for multiple sites is disabled
+        if (!$this->getParams()->isSingleSite()
+            && $this->skipUniqueVisitorsCalculationForMultipleSites
+        ) {
             return;
         }
-        if ( $row->getColumn('nb_uniq_visitors') !== false) {
+        if ($row->getColumn('nb_uniq_visitors') !== false
+            || $row->getColumn('nb_users') !== false
+        ) {
             if (SettingsPiwik::isUniqueVisitorsEnabled($this->getParams()->getPeriod()->getLabel())) {
-                $uniqueVisitors = (float)$this->computeNbUniqVisitors();
-                $row->setColumn('nb_uniq_visitors', $uniqueVisitors);
+                $metrics = array(Metrics::INDEX_NB_UNIQ_VISITORS, Metrics::INDEX_NB_USERS);
+                $uniques = $this->computeNbUniques( $metrics );
+                $row->setColumn('nb_uniq_visitors', $uniques[Metrics::INDEX_NB_UNIQ_VISITORS]);
+                $row->setColumn('nb_users', $uniques[Metrics::INDEX_NB_USERS]);
             } else {
                 $row->deleteColumn('nb_uniq_visitors');
+                $row->deleteColumn('nb_users');
             }
         }
     }
@@ -395,14 +420,15 @@ class ArchiveProcessor
      * This is the only Period metric (ie. week/month/year/range) that we process from the logs directly,
      * since unique visitors cannot be summed like other metrics.
      *
+     * @param array Metrics Ids for which to aggregates count of values
      * @return int
      */
-    protected function computeNbUniqVisitors()
+    protected function computeNbUniques($metrics)
     {
         $logAggregator = $this->getLogAggregator();
-        $query = $logAggregator->queryVisitsByDimension(array(), false, array(), array(Metrics::INDEX_NB_UNIQ_VISITORS));
+        $query = $logAggregator->queryVisitsByDimension(array(), false, array(), $metrics);
         $data = $query->fetch();
-        return $data[Metrics::INDEX_NB_UNIQ_VISITORS];
+        return $data;
     }
 
     /**
@@ -416,15 +442,18 @@ class ArchiveProcessor
     protected function getAggregatedDataTableMap($data, $columnsAggregationOperation)
     {
         $table = new DataTable();
+
         if (!empty($columnsAggregationOperation)) {
             $table->setMetadata(DataTable::COLUMN_AGGREGATION_OPS_METADATA_NAME, $columnsAggregationOperation);
         }
+
         if ($data instanceof DataTable\Map) {
             // as $date => $tableToSum
             $this->aggregatedDataTableMapsAsOne($data, $table);
         } else {
             $table->addDataTable($data, $this->isAggregateSubTables());
         }
+
         return $table;
     }
 
@@ -436,7 +465,7 @@ class ArchiveProcessor
     protected function aggregatedDataTableMapsAsOne(Map $map, DataTable $aggregated)
     {
         foreach ($map->getDataTables() as $tableToAggregate) {
-            if($tableToAggregate instanceof Map) {
+            if ($tableToAggregate instanceof Map) {
                 $this->aggregatedDataTableMapsAsOne($tableToAggregate, $aggregated);
             } else {
                 $aggregated->addDataTable($tableToAggregate, $this->isAggregateSubTables());
@@ -453,6 +482,7 @@ class ArchiveProcessor
         if (is_null($columnsToRenameAfterAggregation)) {
             $columnsToRenameAfterAggregation = self::$columnsToRenameAfterAggregation;
         }
+
         foreach ($columnsToRenameAfterAggregation as $oldName => $newName) {
             $table->renameColumn($oldName, $newName, $this->isAggregateSubTables());
         }
@@ -463,6 +493,7 @@ class ArchiveProcessor
         if (!is_array($columns)) {
             $columns = array($columns);
         }
+
         $operationForColumn = $this->getOperationForColumns($columns, $operationToApply);
 
         $dataTable = $this->getArchive()->getDataTableFromNumeric($columns);
@@ -473,7 +504,7 @@ class ArchiveProcessor
         }
 
         $rowMetrics = $results->getFirstRow();
-        if($rowMetrics === false) {
+        if ($rowMetrics === false) {
             $rowMetrics = new Row;
         }
         $this->enrichWithUniqueVisitorsMetric($rowMetrics);
@@ -486,6 +517,7 @@ class ArchiveProcessor
                 $metrics[$name] = 0;
             }
         }
+
         return $metrics;
     }
 

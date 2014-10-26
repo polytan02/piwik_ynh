@@ -259,11 +259,15 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
             ? $language
             : LanguagesManager::getLanguageCodeForCurrentUser();
 
-        return $this->renderTemplate('optOut', array(
-            'trackVisits' => $trackVisits,
-            'nonce'       => Nonce::getNonce('Piwik_OptOut', 3600),
-            'language'    => $lang
-        ));
+        // should not use self::renderTemplate since that uses setBasicVariablesView. this will cause
+        // an error when setBasicVariablesAdminView is called, and MenuTop is requested (the idSite query
+        // parameter is required)
+        $view = new View("@CoreAdminHome/optOut");
+        $view->setXFrameOptions('allow');
+        $view->trackVisits = $trackVisits;
+        $view->nonce = Nonce::getNonce('Piwik_OptOut', 3600);
+        $view->language = $lang;
+        return $view->render();
     }
 
     public function uploadCustomLogo()
@@ -274,7 +278,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         $successLogo    = $logo->copyUploadedLogoToFilesystem();
         $successFavicon = $logo->copyUploadedFaviconToFilesystem();
 
-        if($successLogo || $successFavicon) {
+        if ($successLogo || $successFavicon) {
             return '1';
         }
         return '0';
@@ -287,7 +291,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
 
     private function saveGeneralSettings()
     {
-        if(!self::isGeneralSettingsAdminEnabled()) {
+        if (!self::isGeneralSettingsAdminEnabled()) {
             // General settings + Beta channel + SMTP settings is disabled
             return;
         }
@@ -335,7 +339,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     {
         // Whether to display or not the general settings (cron, beta, smtp)
         $view->isGeneralSettingsAdminEnabled = self::isGeneralSettingsAdminEnabled();
-        if($view->isGeneralSettingsAdminEnabled) {
+        if ($view->isGeneralSettingsAdminEnabled) {
             $this->displayWarningIfConfigFileNotWritable();
         }
 

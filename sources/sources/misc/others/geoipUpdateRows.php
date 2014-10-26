@@ -33,7 +33,7 @@ if (!Common::isPhpCliMode()) {
         <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
         <html>
         <head>
-            <script type="text/javascript" src="../../libs/jquery/jquery.js"></script>
+            <script type="text/javascript" src="../../libs/jquery/dist/jquery.min.js"></script>
             <script type="text/javascript">
                 (function ($) {
                     var count = <?php echo $count; ?>;
@@ -89,9 +89,7 @@ if (!Common::isPhpCliMode()) {
 function geoipUpdateError($message)
 {
     Log::error($message);
-    if (!Common::isPhpCliMode()) {
-        @header('HTTP/1.1 500 Internal Server Error', $replace = true, $responseCode = 500);
-    }
+    Common::sendHeader('HTTP/1.1 500 Internal Server Error', $replace = true, $responseCode = 500);
     exit;
 }
 

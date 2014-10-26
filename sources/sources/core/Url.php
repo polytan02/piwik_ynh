@@ -10,6 +10,8 @@ namespace Piwik;
 
 use Exception;
 
+use Piwik\Session;
+
 /**
  * Provides URL related helper methods.
  *
@@ -64,7 +66,7 @@ class Url
     {
         return self::getCurrentScheme() . '://'
         . self::getCurrentHost()
-        . self::getCurrentScriptName()
+        . self::getCurrentScriptName(false)
         . self::getCurrentQueryString();
     }
 
@@ -81,7 +83,7 @@ class Url
     {
         return self::getCurrentScheme() . '://'
         . self::getCurrentHost($default = 'unknown', $checkTrustedHost)
-        . self::getCurrentScriptName();
+        . self::getCurrentScriptName(false);
     }
 
     /**
@@ -123,11 +125,12 @@ class Url
     /**
      * Returns the path to the script being executed. Includes the script file name.
      *
+     * @param bool $removePathInfo If true (default value) then the PATH_INFO will be stripped.
      * @return string eg, `"/dir1/dir2/index.php"` if the current URL is
      *                `"http://example.org/dir1/dir2/index.php?param1=value1&param2=value2"`
      * @api
      */
-    public static function getCurrentScriptName()
+    public static function getCurrentScriptName($removePathInfo = true)
     {
         $url = '';
 
@@ -145,7 +148,7 @@ class Url
             }
 
             // strip path_info
-            if (isset($_SERVER['PATH_INFO'])) {
+            if ($removePathInfo && isset($_SERVER['PATH_INFO'])) {
                 $url = substr($url, 0, -strlen($_SERVER['PATH_INFO']));
             }
         }
@@ -225,16 +228,16 @@ class Url
 
         $trustedHosts = self::getTrustedHosts();
 
+        // Only punctuation we allow is '[', ']', ':', '.', '_' and '-'
+        $hostLength = strlen($host);
+        if ($hostLength !== strcspn($host, '`~!@#$%^&*()+={}\\|;"\'<>,?/ ')) {
+            return false;
+        }
+
         // if no trusted hosts, just assume it's valid
         if (empty($trustedHosts)) {
             self::saveTrustedHostnameInConfig($host);
             return true;
-        }
-
-        // Only punctuation we allow is '[', ']', ':', '.' and '-'
-        $hostLength = strlen($host);
-        if ($hostLength !== strcspn($host, '`~!@#$%^&*()_+={}\\|;"\'<>,?/ ')) {
-            return false;
         }
 
         foreach ($trustedHosts as &$trustedHost) {
@@ -339,7 +342,7 @@ class Url
         $hostHeaders = array();
 
         $config = Config::getInstance()->General;
-        if(isset($config['proxy_host_headers'])) {
+        if (isset($config['proxy_host_headers'])) {
             $hostHeaders = $config['proxy_host_headers'];
         }
 
@@ -466,6 +469,7 @@ class Url
      * Redirects the user to the specified URL.
      *
      * @param string $url
+     * @throws Exception
      * @api
      */
     public static function redirectToUrl($url)
@@ -478,12 +482,12 @@ class Url
         if (UrlHelper::isLookLikeUrl($url)
             || strpos($url, 'index.php') === 0
         ) {
-            @header("Location: $url");
+            Common::sendHeader("Location: $url");
         } else {
             echo "Invalid URL to redirect to.";
         }
 
-        if(Common::isPhpCliMode()) {
+        if (Common::isPhpCliMode()) {
             throw new Exception("If you were using a browser, Piwik would redirect you to this URL: $url \n\n");
         }
         exit;
@@ -494,7 +498,7 @@ class Url
      */
     public static function redirectToHttps()
     {
-        if(ProxyHttp::isHttps()) {
+        if (ProxyHttp::isHttps()) {
             return;
         }
         $url = self::getCurrentUrl();
@@ -597,5 +601,61 @@ class Url
             return array();
         }
         return $hosts;
+    }
+
+    /**
+     * Returns the host part of any valid URL.
+     *
+     * @param string $url  Any fully qualified URL
+     * @return string|null The actual host in lower case or null if $url is not a valid fully qualified URL.
+     */
+    public static function getHostFromUrl($url)
+    {
+        $parsedUrl = parse_url($url);
+
+        if (empty($parsedUrl['host'])) {
+            return;
+        }
+
+        return Common::mb_strtolower($parsedUrl['host']);
+    }
+
+    /**
+     * Checks whether any of the given URLs has the given host. If not, we will also check whether any URL uses a
+     * subdomain of the given host. For instance if host is "example.com" and a URL is "http://www.example.com" we
+     * consider this as valid and return true. The always trusted hosts such as "127.0.0.1" are considered valid as well.
+     *
+     * @param $host
+     * @param $urls
+     * @return bool
+     */
+    public static function isHostInUrls($host, $urls)
+    {
+        if (empty($host)) {
+            return false;
+        }
+
+        $host = Common::mb_strtolower($host);
+
+        if (!empty($urls)) {
+            foreach ($urls as $url) {
+                if (Common::mb_strtolower($url) === $host) {
+                    return true;
+                }
+
+                $siteHost = self::getHostFromUrl($url);
+
+                if ($siteHost === $host) {
+                    return true;
+                }
+
+                if (Common::stringEndsWith($siteHost, '.' . $host)) {
+                    // allow subdomains
+                    return true;
+                }
+            }
+        }
+
+        return in_array($host, self::$alwaysTrustedHosts);
     }
 }

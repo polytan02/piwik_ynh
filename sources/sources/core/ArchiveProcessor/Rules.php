@@ -33,8 +33,6 @@ class Rules
 
     const FLAG_TABLE_PURGED = 'lastPurge_';
 
-    public static $purgeOutdatedArchivesIsDisabled = false;
-
     /** Flag that will forcefully disable the archiving process (used in tests only) */
     public static $archivingDisabledByTests = false;
 
@@ -129,16 +127,6 @@ class Rules
         return $doneFlags;
     }
 
-    public static function disablePurgeOutdatedArchives()
-    {
-        self::$purgeOutdatedArchivesIsDisabled = true;
-    }
-
-    public static function enablePurgeOutdatedArchives()
-    {
-        self::$purgeOutdatedArchivesIsDisabled = false;
-    }
-
     /**
      * Given a monthly archive table, will delete all reports that are now outdated,
      * or reports that ended with an error
@@ -148,9 +136,6 @@ class Rules
      */
     public static function shouldPurgeOutdatedArchives(Date $date)
     {
-        if (self::$purgeOutdatedArchivesIsDisabled) {
-            return false;
-        }
         $key = self::FLAG_TABLE_PURGED . "blob_" . $date->toString('Y_m');
         $timestamp = Option::get($key);
 
@@ -176,7 +161,7 @@ class Rules
                 $purgeArchivesOlderThan = Date::factory(time() - 2 * $temporaryArchivingTimeout)->getDateTime();
             } else {
                 // If cron core:archive command is building the reports, we should keep all temporary reports from today
-                $purgeArchivesOlderThan = Date::factory('today')->getDateTime();
+                $purgeArchivesOlderThan = Date::factory('yesterday')->getDateTime();
             }
             return $purgeArchivesOlderThan;
         }
@@ -222,7 +207,7 @@ class Rules
     {
         $uiSettingIsEnabled = Controller::isGeneralSettingsAdminEnabled();
 
-        if($uiSettingIsEnabled) {
+        if ($uiSettingIsEnabled) {
             $timeToLive = Option::get(self::OPTION_TODAY_ARCHIVE_TTL);
             if ($timeToLive !== false) {
                 return $timeToLive;
@@ -257,7 +242,7 @@ class Rules
         return $isArchivingDisabled;
     }
 
-    protected static function isRequestAuthorizedToArchive()
+    public static function isRequestAuthorizedToArchive()
     {
         return Rules::isBrowserTriggerEnabled() || SettingsServer::isArchivePhpTriggered();
     }
@@ -266,7 +251,7 @@ class Rules
     {
         $uiSettingIsEnabled = Controller::isGeneralSettingsAdminEnabled();
 
-        if($uiSettingIsEnabled) {
+        if ($uiSettingIsEnabled) {
             $browserArchivingEnabled = Option::get(self::OPTION_BROWSER_TRIGGER_ARCHIVING);
             if ($browserArchivingEnabled !== false) {
                 return (bool)$browserArchivingEnabled;
@@ -282,6 +267,18 @@ class Rules
         }
         Option::set(self::OPTION_BROWSER_TRIGGER_ARCHIVING, (int)$enabled, $autoLoad = true);
         Cache::clearCacheGeneral();
+    }
+
+    /**
+     * Returns true if the archiving process should skip the calculation of unique visitors
+     * across several sites. The `[General] enable_processing_unique_visitors_multiple_sites`
+     * INI config option controls the value of this variable.
+     *
+     * @return bool
+     */
+    public static function shouldSkipUniqueVisitorsCalculationForMultipleSites()
+    {
+        return Config::getInstance()->General['enable_processing_unique_visitors_multiple_sites'] != 1;
     }
 
     /**

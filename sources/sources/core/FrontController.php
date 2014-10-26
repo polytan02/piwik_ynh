@@ -12,6 +12,7 @@ namespace Piwik;
 use Exception;
 use Piwik\API\Request;
 use Piwik\API\ResponseBuilder;
+use Piwik\Http\Router;
 use Piwik\Plugin\Controller;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\Widgets;
@@ -57,6 +58,7 @@ use Piwik\Plugins\CoreHome\Controller as CoreHomeController;
 class FrontController extends Singleton
 {
     const DEFAULT_MODULE = 'CoreHome';
+
     /**
      * Set to false and the Front Controller will not dispatch the request
      *
@@ -79,6 +81,13 @@ class FrontController extends Singleton
     public function dispatch($module = null, $action = null, $parameters = null)
     {
         if (self::$enableDispatch === false) {
+            return;
+        }
+
+        $filter = new Router();
+        $redirection = $filter->filterUrl(Url::getCurrentUrl());
+        if ($redirection !== null) {
+            Url::redirectToUrl($redirection);
             return;
         }
 
@@ -153,7 +162,8 @@ class FrontController extends Singleton
             return array(new CoreHomeController(), 'renderReportWidget');
         }
 
-        if (!empty($action) && 'menu' === substr($action, 0, 4)) {
+        if (!empty($action) && Report::PREFIX_ACTION_IN_MENU === substr($action, 0, strlen(Report
+            ::PREFIX_ACTION_IN_MENU))) {
             $reportAction = lcfirst(substr($action, 4)); // menuGetPageUrls => getPageUrls
             $report       = Report::factory($module, $reportAction);
 
@@ -508,22 +518,22 @@ class FrontController extends Singleton
     protected function handleSSLRedirection()
     {
         // Specifically disable for the opt out iframe
-        if(Piwik::getModule() == 'CoreAdminHome' && Piwik::getAction() == 'optOut') {
+        if (Piwik::getModule() == 'CoreAdminHome' && Piwik::getAction() == 'optOut') {
             return;
         }
         // Disable Https for VisitorGenerator
-        if(Piwik::getModule() == 'VisitorGenerator') {
+        if (Piwik::getModule() == 'VisitorGenerator') {
             return;
         }
-        if(Common::isPhpCliMode()) {
+        if (Common::isPhpCliMode()) {
             return;
         }
         // Only enable this feature after Piwik is already installed
-        if(!SettingsPiwik::isPiwikInstalled()) {
+        if (!SettingsPiwik::isPiwikInstalled()) {
             return;
         }
         // proceed only when force_ssl = 1
-        if(!SettingsPiwik::isHttpsForced()) {
+        if (!SettingsPiwik::isHttpsForced()) {
             return;
         }
         Url::redirectToHttps();
@@ -602,7 +612,6 @@ class FrontController extends Singleton
         Piwik::postEvent('Request.dispatch.end', array(&$result, $module, $action, $parameters));
         return $result;
     }
-
 }
 
 /**

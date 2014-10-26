@@ -9,6 +9,7 @@
 
 namespace Piwik\Plugins\CoreConsole\Commands;
 
+use Piwik\Columns\Dimension;
 use Piwik\Plugin\Report;
 use Piwik\Translate;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,6 +32,8 @@ class GenerateReport extends GeneratePluginBase
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $pluginName    = $this->getPluginName($input, $output);
+        $this->checkAndUpdateRequiredPiwikVersion($pluginName, $output);
+
         $reportName    = $this->getReportName($input, $output);
         $category      = $this->getCategory($input, $output, $pluginName);
         $documentation = $this->getDocumentation($input, $output);
@@ -40,8 +43,7 @@ class GenerateReport extends GeneratePluginBase
         $apiName = $this->getApiName($reportName);
 
         $exampleFolder  = PIWIK_INCLUDE_PATH . '/plugins/ExampleReport';
-        $replace        = array('ExampleReport'     => $pluginName,
-                                'GetExampleReport'  => ucfirst($apiName),
+        $replace        = array('GetExampleReport'  => ucfirst($apiName),
                                 'getExampleReport'  => lcfirst($apiName),
                                 'getApiReport'      => lcfirst($apiName),
                                 'ExampleCategory'   => $category,
@@ -49,7 +51,8 @@ class GenerateReport extends GeneratePluginBase
                                 'ExampleReportDocumentation' => $documentation,
                                 '999'               => $order,
                                 'new ExitPageUrl()' => $dimension,
-                                'use Piwik\Plugins\Actions\Columns\ExitPageUrl;' => $dimensionClass
+                                'use Piwik\Plugins\Actions\Columns\ExitPageUrl;' => $dimensionClass,
+                                'ExampleReport'     => $pluginName,
         );
 
         $whitelistFiles = array('/Reports', '/Reports/Base.php', '/Reports/GetExampleReport.php');
@@ -229,6 +232,14 @@ class GenerateReport extends GeneratePluginBase
                     $dimensions[$name] = get_class($dimension);
                     $dimensionNames[]  = $name;
                 }
+            }
+        }
+
+        foreach (Dimension::getAllDimensions() as $dimension) {
+            $name = $dimension->getName();
+            if (!empty($name)) {
+                $dimensions[$name] = get_class($dimension);
+                $dimensionNames[]  = $name;
             }
         }
 

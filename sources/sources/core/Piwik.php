@@ -13,7 +13,6 @@ use Piwik\Db\Adapter;
 use Piwik\Db\Schema;
 use Piwik\Db;
 use Piwik\Plugin;
-use Piwik\Plugins\SitesManager\API as APISitesManager;
 use Piwik\Plugins\UsersManager\API as APIUsersManager;
 use Piwik\Session;
 use Piwik\Tracker;
@@ -76,9 +75,7 @@ class Piwik
      */
     public static function exitWithErrorMessage($message)
     {
-        if (!Common::isPhpCliMode()) {
-            @header('Content-Type: text/html; charset=utf-8');
-        }
+        Common::sendHeader('Content-Type: text/html; charset=utf-8');
 
         $output = "<style>a{color:red;}</style>\n" .
             "<div style='color:red;font-family:Georgia;font-size:120%'>" .
@@ -119,112 +116,6 @@ class Piwik
             return 0;
         }
         return round(100 * $dividend / $divisor, $precision);
-    }
-
-    /**
-     * Returns the Javascript code to be inserted on every page to track
-     *
-     * @param int $idSite
-     * @param string $piwikUrl http://path/to/piwik/directory/
-     * @return string
-     */
-    public static function getJavascriptCode($idSite, $piwikUrl, $mergeSubdomains = false, $groupPageTitlesByDomain = false,
-                                             $mergeAliasUrls = false, $visitorCustomVariables = false, $pageCustomVariables = false,
-                                             $customCampaignNameQueryParam = false, $customCampaignKeywordParam = false,
-                                             $doNotTrack = false)
-    {
-        // changes made to this code should be mirrored in plugins/CoreAdminHome/javascripts/jsTrackingGenerator.js var generateJsCode
-        $jsCode = file_get_contents(PIWIK_INCLUDE_PATH . "/plugins/Morpheus/templates/javascriptCode.tpl");
-        $jsCode = htmlentities($jsCode);
-        if(substr($piwikUrl, 0, 4) !== 'http') {
-            $piwikUrl = 'http://' . $piwikUrl;
-        }
-        preg_match('~^(http|https)://(.*)$~D', $piwikUrl, $matches);
-        $piwikUrl = rtrim(@$matches[2], "/");
-
-        // Build optional parameters to be added to text
-        $options = '';
-        if ($groupPageTitlesByDomain) {
-            $options .= '  _paq.push(["setDocumentTitle", document.domain + "/" + document.title]);' . PHP_EOL;
-        }
-        if ($mergeSubdomains || $mergeAliasUrls) {
-            $options .= self::getJavascriptTagOptions($idSite, $mergeSubdomains, $mergeAliasUrls);
-        }
-        $maxCustomVars = Plugins\CustomVariables\CustomVariables::getMaxCustomVariables();
-
-        if ($visitorCustomVariables) {
-            $options .=  '  // you can set up to ' . $maxCustomVars . ' custom variables for each visitor' . PHP_EOL;
-            $index = 1;
-            foreach ($visitorCustomVariables as $visitorCustomVariable) {
-                if (empty($visitorCustomVariable)) {
-                    continue;
-                }
-
-                $options .=  '  _paq.push(["setCustomVariable", '.$index++.', "'.$visitorCustomVariable[0].'", "'.$visitorCustomVariable[1].'", "visit"]);' . PHP_EOL;
-            }
-        }
-        if ($pageCustomVariables) {
-            $options .=  '  // you can set up to ' . $maxCustomVars . ' custom variables for each action (page view, download, click, site search)' . PHP_EOL;
-            $index = 1;
-            foreach ($pageCustomVariables as $pageCustomVariable) {
-                if (empty($pageCustomVariable)) {
-                    continue;
-                }
-                $options .=  '  _paq.push(["setCustomVariable", '.$index++.', "'.$pageCustomVariable[0].'", "'.$pageCustomVariable[1].'", "page"]);' . PHP_EOL;
-            }
-        }
-        if ($customCampaignNameQueryParam) {
-            $options .=  '  _paq.push(["setCampaignNameKey", "'.$customCampaignNameQueryParam.'"]);' . PHP_EOL;
-        }
-        if ($customCampaignKeywordParam) {
-            $options .=  '  _paq.push(["setCampaignKeywordKey", "'.$customCampaignKeywordParam.'"]);' . PHP_EOL;
-        }
-        if ($doNotTrack) {
-            $options .= '  _paq.push(["setDoNotTrack", true]);' . PHP_EOL;
-        }
-
-        $codeImpl = array(
-            'idSite' => $idSite,
-            'piwikUrl' => Common::sanitizeInputValue($piwikUrl),
-            'options' => $options
-        );
-        $parameters = compact('mergeSubdomains', 'groupPageTitlesByDomain', 'mergeAliasUrls', 'visitorCustomVariables',
-                              'pageCustomVariables', 'customCampaignNameQueryParam', 'customCampaignKeywordParam',
-                              'doNotTrack');
-
-        /**
-         * Triggered when generating JavaScript tracking code server side. Plugins can use
-         * this event to customise the JavaScript tracking code that is displayed to the
-         * user.
-         *
-         * @param array &$codeImpl An array containing snippets of code that the event handler
-         *                         can modify. Will contain the following elements:
-         *
-         *                         - **idSite**: The ID of the site being tracked.
-         *                         - **piwikUrl**: The tracker URL to use.
-         *                         - **options**: A string of JavaScript code that customises
-         *                                        the JavaScript tracker.
-         *
-         *                         The **httpsPiwikUrl** element can be set if the HTTPS
-         *                         domain is different from the normal domain.
-         * @param array $parameters The parameters supplied to the `Piwik::getJavascriptCode()`.
-         */
-        self::postEvent('Piwik.getJavascriptCode', array(&$codeImpl, $parameters));
-
-        if (!empty($codeImpl['httpsPiwikUrl'])) {
-            $setTrackerUrl = 'var u=(("https:" == document.location.protocol) ? "https://{$httpsPiwikUrl}/" : '
-                           . '"http://{$piwikUrl}/");';
-
-            $codeImpl['httpsPiwikUrl'] = rtrim($codeImpl['httpsPiwikUrl'], "/");
-        } else {
-            $setTrackerUrl = 'var u=(("https:" == document.location.protocol) ? "https" : "http") + "://{$piwikUrl}/";';
-        }
-        $codeImpl = array('setTrackerUrl' => htmlentities($setTrackerUrl)) + $codeImpl;
-
-        foreach ($codeImpl as $keyToReplace => $replaceWith) {
-            $jsCode = str_replace('{$' . $keyToReplace . '}', $replaceWith, $jsCode);
-        }
-        return $jsCode;
     }
 
     /**
@@ -298,7 +189,12 @@ class Piwik
      */
     public static function getCurrentUserLogin()
     {
-        return Access::getInstance()->getLogin();
+        $login = Access::getInstance()->getLogin();
+
+        if(empty($login)) {
+            return 'anonymous';
+        }
+        return $login;
     }
 
     /**
@@ -405,7 +301,8 @@ class Piwik
      */
     public static function isUserIsAnonymous()
     {
-        return Piwik::getCurrentUserLogin() == 'anonymous';
+        $currentUserLogin = Piwik::getCurrentUserLogin();
+        return $currentUserLogin == 'anonymous';
     }
 
     /**
@@ -428,7 +325,10 @@ class Piwik
      * Helper method user to set the current as superuser.
      * This should be used with great care as this gives the user all permissions.
      *
+     * This method is deprecated, use {@link Access::doAsSuperUser()} instead.
+     *
      * @param bool $bool true to set current user as Super User
+     * @deprecated
      */
     public static function setUserHasSuperUserAccess($bool = true)
     {
@@ -838,27 +738,31 @@ class Piwik
         return vsprintf($translationId, $args);
     }
 
-    protected static function getJavascriptTagOptions($idSite, $mergeSubdomains, $mergeAliasUrls)
+    /**
+     * Executes a callback with superuser privileges, making sure those privileges are rescinded
+     * before this method exits. Privileges will be rescinded even if an exception is thrown.
+     *
+     * @param callback $function The callback to execute. Should accept no arguments.
+     * @return mixed The result of `$function`.
+     * @throws Exception rethrows any exceptions thrown by `$function`.
+     * @api
+     */
+    public static function doAsSuperUser($function)
     {
+        $isSuperUser = self::hasUserSuperUserAccess();
+
+        self::setUserHasSuperUserAccess();
+
         try {
-            $websiteUrls = APISitesManager::getInstance()->getSiteUrlsFromId($idSite);
-        } catch (\Exception $e) {
-            return '';
+            $result = $function();
+        } catch (Exception $ex) {
+            self::setUserHasSuperUserAccess($isSuperUser);
+
+            throw $ex;
         }
-        // We need to parse_url to isolate hosts
-        $websiteHosts = array();
-        foreach ($websiteUrls as $site_url) {
-            $referrerParsed = parse_url($site_url);
-            $websiteHosts[] = $referrerParsed['host'];
-        }
-        $options = '';
-        if ($mergeSubdomains && !empty($websiteHosts)) {
-            $options .= '  _paq.push(["setCookieDomain", "*.' . $websiteHosts[0] . '"]);' . PHP_EOL;
-        }
-        if ($mergeAliasUrls && !empty($websiteHosts)) {
-            $urls = '["*.' . implode('","*.', $websiteHosts) . '"]';
-            $options .= '  _paq.push(["setDomains", ' . $urls . ']);' . PHP_EOL;
-        }
-        return $options;
+
+        self::setUserHasSuperUserAccess($isSuperUser);
+
+        return $result;
     }
 }

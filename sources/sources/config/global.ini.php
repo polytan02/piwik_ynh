@@ -88,7 +88,6 @@ allow_upgrades_to_beta = 0
 enable_load_standalone_plugins_during_tests = 0
 
 [Development]
-
 ; Enables the development mode where we avoid most caching to make sure code changes will be directly applied as
 ; some caches are only invalidated after an update otherwise. When enabled it'll also performs some validation checks.
 ; For instance if you register a method in a widget we will verify whether the method actually exists and is public.
@@ -101,15 +100,20 @@ disable_merged_assets = 0
 
 [General]
 
-; the following settings control whether Unique Visitors will be processed for different period types.
+; the following settings control whether Unique Visitors `nb_uniq_visitors` and Unique users `nb_users` will be processed for different period types.
 ; year and range periods are disabled by default, to ensure optimal performance for high traffic Piwik instances
 ; if you set it to 1 and want the Unique Visitors to be re-processed for reports in the past, drop all piwik_archive_* tables
-; it is recommended to always enable Unique Visitors processing for 'day' periods
+; it is recommended to always enable Unique Visitors and Unique Users processing for 'day' periods
 enable_processing_unique_visitors_day = 1
 enable_processing_unique_visitors_week = 1
 enable_processing_unique_visitors_month = 1
 enable_processing_unique_visitors_year = 0
 enable_processing_unique_visitors_range = 0
+
+; controls whether Unique Visitors will be processed for groups of websites. these metrics describe the number
+; of unique visitors across the entire set of websites, so if a visitor visited two websites in the group, she
+; would still only be counted as one. only relevant when using plugins that group sites together
+enable_processing_unique_visitors_multiple_sites = 0
 
 ; The list of periods that are available in the Piwik calendar
 ; Example use case: custom date range requests are processed in real time,
@@ -158,8 +162,10 @@ browser_archiving_disabled_enforce = 0
 ; By default, users can create Segments which are to be processed in Real-time.
 ; Setting this to 0 will force all newly created Custom Segments to be "Pre-processed (faster, requires archive.php cron)"
 ; This can be useful if you want to prevent users from adding much load on the server.
-; Note: any existing Segment set to "processed in Real time", will still be set to Real-time.
-;       this will only affect custom segments added or modified after this setting is changed.
+; Notes:
+;  * any existing Segment set to "processed in Real time", will still be set to Real-time.
+;    this will only affect custom segments added or modified after this setting is changed.
+;  * when set to 0 then any user with at least 'view' access will be able to create pre-processed segments.
 enable_create_realtime_segments = 1
 
 ; Whether to enable the "Suggest values for segment" in the Segment Editor panel.
@@ -171,6 +177,11 @@ enable_segment_suggested_values = 1
 ; Note: anonymous user (even if it has view access) is not allowed to create or edit segment.
 ; Possible values are "view", "admin", "superuser"
 adding_segment_requires_access = "view"
+
+; Whether it is allowed for users to add segments that affect all websites or not. If there are many websites
+; this admin option can be used to prevent users from performing an action that will have a major impact
+; on Piwik performance.
+allow_adding_segments_for_all_websites = 1
 
 ; this action name is used when the URL ends with a slash /
 ; it is useful to have an actual string to write in the UI
@@ -462,6 +473,17 @@ enable_auto_update = 1
 ; If set to 0 it also disables the "sent plugin update emails" feature in general and the related setting in the UI.
 enable_update_communication = 1
 
+; This controls whether the pivotBy query parameter can be used with any dimension or just subtable
+; dimensions. If set to 1, it will fetch a report with a segment for each row of the table being pivoted.
+; At present, this is very inefficient, so it is disabled by default.
+pivot_by_filter_enable_fetch_by_segment = 0
+
+; This controls the default maximum number of columns to display in a pivot table. Since a pivot table displays
+; a table's rows as columns, the number of columns can become very large, which will affect webpage layouts.
+; Set to -1 to specify no limit. Note: The pivotByColumnLimit query parameter can be used to override this default
+; on a per-request basis;
+pivot_by_filter_default_column_limit = 10
+
 [Tracker]
 ; Piwik uses first party cookies by default. If set to 1,
 ; the visit ID cookie will be set on the Piwik server domain as well
@@ -472,13 +494,6 @@ use_third_party_id_cookie = 0
 ; Once enabled (set to 1) messages will be logged to all loggers defined in "[log] log_writers" config.
 debug = 0
 
-; There is a feature in the Tracking API that lets you create new visit at any given time, for example if you know that a different user/customer is using
-; the app then you would want to tell Piwik to create a new visit (even though both users are using the same browser/computer).
-; To prevent abuse and easy creation of fake visits, this feature requires admin token_auth by default
-; If you wish to use this feature using the Javascript tracker, you can set the setting new_visit_api_requires_admin=0, and in Javascript write:
-; _paq.push(['appendToTrackingUrl', 'new_visit=1']);
-new_visit_api_requires_admin = 1
-
 ; This setting is described in this FAQ: http://piwik.org/faq/how-to/faq_175/
 ; Note: generally this should only be set to 1 in an intranet setting, where most users have the same configuration (browsers, OS)
 ; and the same IP. If left to 0 in this setting, all visitors will be counted as one single visitor.
@@ -488,9 +503,9 @@ trust_visitors_cookies = 0
 ; This is used only if use_third_party_id_cookie = 1
 cookie_name = _pk_uid
 
-; by default, the Piwik tracking cookie expires in 2 years
+; by default, the Piwik tracking cookie expires in 13 months (365 + 28 days)
 ; This is used only if use_third_party_id_cookie = 1
-cookie_expire = 63072000
+cookie_expire = 33955200;
 
 ; The path on the server in which the cookie will be available on.
 ; Defaults to empty. See spec in http://curl.haxx.se/rfc/cookie_spec.html
@@ -667,6 +682,7 @@ Plugins[] = Insights
 Plugins[] = ZenMode
 Plugins[] = LeftMenu
 Plugins[] = Morpheus
+Plugins[] = Contents
 
 [PluginsInstalled]
 PluginsInstalled[] = Login

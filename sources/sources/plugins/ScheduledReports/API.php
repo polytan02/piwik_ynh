@@ -12,6 +12,7 @@ use Exception;
 use Piwik\Common;
 use Piwik\Date;
 use Piwik\Db;
+use Piwik\Log;
 use Piwik\NoAccessException;
 use Piwik\Piwik;
 use Piwik\Plugins\LanguagesManager\LanguagesManager;
@@ -53,6 +54,9 @@ class API extends \Piwik\Plugin\API
 
     const REPORT_TRUNCATE = 23;
 
+    // static cache storing reports
+    public static $cache = array();
+
     /**
      * Creates a new report and schedules it.
      *
@@ -84,29 +88,20 @@ class API extends \Piwik\Plugin\API
         // validation of requested reports
         $reports = self::validateRequestedReports($idSite, $reportType, $reports);
 
-        $db = Db::get();
-        $idReport = $db->fetchOne("SELECT max(idreport) + 1 FROM " . Common::prefixTable('report'));
-
-        if ($idReport == false) {
-            $idReport = 1;
-        }
-
-        $db->insert(Common::prefixTable('report'),
-            array(
-                 'idreport'    => $idReport,
-                 'idsite'      => $idSite,
-                 'login'       => $currentUser,
-                 'description' => $description,
-                 'idsegment'   => $idSegment,
-                 'period'      => $period,
-                 'hour'        => $hour,
-                 'type'        => $reportType,
-                 'format'      => $reportFormat,
-                 'parameters'  => $parameters,
-                 'reports'     => $reports,
-                 'ts_created'  => Date::now()->getDatetime(),
-                 'deleted'     => 0,
-            ));
+        $idReport = $this->getModel()->createReport(array(
+             'idsite'      => $idSite,
+             'login'       => $currentUser,
+             'description' => $description,
+             'idsegment'   => $idSegment,
+             'period'      => $period,
+             'hour'        => $hour,
+             'type'        => $reportType,
+             'format'      => $reportFormat,
+             'parameters'  => $parameters,
+             'reports'     => $reports,
+             'ts_created'  => Date::now()->getDatetime(),
+             'deleted'     => 0,
+        ));
 
         return $idReport;
     }
@@ -130,7 +125,7 @@ class API extends \Piwik\Plugin\API
         Piwik::checkUserHasViewAccess($idSite);
 
         $scheduledReports = $this->getReports($idSite, $periodSearch = false, $idReport);
-        $report = reset($scheduledReports);
+        $report   = reset($scheduledReports);
         $idReport = $report['idreport'];
 
         $currentUser = Piwik::getCurrentUserLogin();
@@ -144,19 +139,16 @@ class API extends \Piwik\Plugin\API
         // validation of requested reports
         $reports = self::validateRequestedReports($idSite, $reportType, $reports);
 
-        Db::get()->update(Common::prefixTable('report'),
-            array(
-                 'description' => $description,
-                 'idsegment'   => $idSegment,
-                 'period'      => $period,
-                 'hour'        => $hour,
-                 'type'        => $reportType,
-                 'format'      => $reportFormat,
-                 'parameters'  => $parameters,
-                 'reports'     => $reports,
-            ),
-            "idreport = '$idReport'"
-        );
+        $this->getModel()->updateReport($idReport, array(
+            'description' => $description,
+            'idsegment'   => $idSegment,
+            'period'      => $period,
+            'hour'        => $hour,
+            'type'        => $reportType,
+            'format'      => $reportFormat,
+            'parameters'  => $parameters,
+            'reports'     => $reports,
+        ));
 
         self::$cache = array();
     }
@@ -172,17 +164,12 @@ class API extends \Piwik\Plugin\API
         $report = reset($APIScheduledReports);
         Piwik::checkUserHasSuperUserAccessOrIsTheUser($report['login']);
 
-        Db::get()->update(Common::prefixTable('report'),
-            array(
-                 'deleted' => 1,
-            ),
-            "idreport = '$idReport'"
-        );
+        $this->getModel()->updateReport($idReport, array(
+            'deleted' => 1,
+        ));
+
         self::$cache = array();
     }
-
-    // static cache storing reports
-    public static $cache = array();
 
     /**
      * Returns the list of reports matching the passed parameters
@@ -198,6 +185,7 @@ class API extends \Piwik\Plugin\API
     public function getReports($idSite = false, $period = false, $idReport = false, $ifSuperUserReturnOnlySuperUserReports = false, $idSegment = false)
     {
         Piwik::checkUserHasSomeViewAccess();
+
         $cacheKey = (int)$idSite . '.' . (string)$period . '.' . (int)$idReport . '.' . (int)$ifSuperUserReturnOnlySuperUserReports;
         if (isset(self::$cache[$cacheKey])) {
             return self::$cache[$cacheKey];
@@ -427,7 +415,7 @@ class API extends \Piwik\Plugin\API
             array(&$reportRenderer, $reportType, $outputType, $report)
         );
 
-        if(is_null($reportRenderer)) {
+        if (is_null($reportRenderer)) {
             throw new Exception("A report renderer was not supplied in the event " . self::GET_RENDERER_INSTANCE_EVENT);
         }
 
@@ -479,7 +467,7 @@ class API extends \Piwik\Plugin\API
         }
     }
 
-    public function sendReport($idReport, $period = false, $date = false)
+    public function sendReport($idReport, $period = false, $date = false, $force = false)
     {
         Piwik::checkUserIsNotAnonymous();
 
@@ -514,10 +502,11 @@ class API extends \Piwik\Plugin\API
             throw new Exception("The report file wasn't found in $outputFilename");
         }
 
-        $filename = basename($outputFilename);
-        $handle = fopen($outputFilename, "r");
-        $contents = fread($handle, filesize($outputFilename));
-        fclose($handle);
+        $contents = file_get_contents($outputFilename);
+
+        if (empty($contents)) {
+            Log::warning("Scheduled report file '%s' exists but is empty!", $outputFilename);
+        }
 
         /**
          * Triggered when sending scheduled reports.
@@ -540,6 +529,9 @@ class API extends \Piwik\Plugin\API
          * @param string $reportTitle The scheduled report's given title (given by a Piwik user).
          * @param array $additionalFiles The list of additional files that should be
          *                               sent with this report.
+         * @param \Piwik\Period $period The period for which the report has been generated.
+         * @param boolean $force A report can only be sent once per period. Setting this to true
+         *                       will force to send the report even if it has already been sent.
          */
         Piwik::postEvent(
             self::SEND_REPORT_EVENT,
@@ -547,19 +539,19 @@ class API extends \Piwik\Plugin\API
                 $report['type'],
                 $report,
                 $contents,
-                $filename,
+                $filename = basename($outputFilename),
                 $prettyDate,
                 $reportSubject,
                 $reportTitle,
-                $additionalFiles
+                $additionalFiles,
+                \Piwik\Period\Factory::build($report['period'], $date),
+                $force
             )
         );
 
         // Update flag in DB
-        Db::get()->update(Common::prefixTable('report'),
-            array('ts_last_sent' => Date::now()->getDatetime()),
-            "idreport = " . $report['idreport']
-        );
+        $now = Date::now()->getDatetime();
+        $this->getModel()->updateReport($report['idreport'], array('ts_last_sent' => $now));
 
         // If running from piwik.php with debug, do not delete the PDF after sending the email
         if (!isset($GLOBALS['PIWIK_TRACKER_DEBUG']) || !$GLOBALS['PIWIK_TRACKER_DEBUG']) {
@@ -567,10 +559,15 @@ class API extends \Piwik\Plugin\API
         }
     }
 
+    private function getModel()
+    {
+        return new Model();
+    }
+
     private static function getReportSubjectAndReportTitle($websiteName, $reports)
     {
         // if the only report is "All websites", we don't display the site name
-        $reportTitle = Piwik::translate('General_Website') . " " . $websiteName;
+        $reportTitle = $websiteName;
         $reportSubject = $websiteName;
         if (count($reports) == 1
             && $reports[0] == 'MultiSites_getAll'

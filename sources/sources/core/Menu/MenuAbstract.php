@@ -9,7 +9,6 @@
 namespace Piwik\Menu;
 
 use Piwik\Common;
-use Piwik\Log;
 use Piwik\Plugins\SitesManager\API;
 use Piwik\Singleton;
 use Piwik\Plugin\Manager as PluginManager;
@@ -77,18 +76,34 @@ abstract class MenuAbstract extends Singleton
      *                                         current user. If false, the entry will not be added.
      * @param int $order The order hint.
      * @param bool|string $tooltip An optional tooltip to display or false to display the tooltip.
-     * @api
+     *
+     * @deprecated since 2.7.0 Use {@link addItem() instead}. Method will be removed in Piwik 3.0
      */
     public function add($menuName, $subMenuName, $url, $displayedForCurrentUser = true, $order = 50, $tooltip = false)
     {
         if (!$displayedForCurrentUser) {
-            // TODO this parameter should be removed and instead menu items should be only added if it is supposed to be
-            // displayed. Won't do it now to stay backward compatible. For Piwik 3.0 we should do it.
             return;
         }
 
+        $this->addItem($menuName, $subMenuName, $url, $order, $tooltip);
+    }
+
+    /**
+     * Adds a new entry to the menu.
+     *
+     * @param string $menuName The menu's category name. Can be a translation token.
+     * @param string $subMenuName The menu item's name. Can be a translation token.
+     * @param string|array $url The URL the admin menu entry should link to, or an array of query parameters
+     *                          that can be used to build the URL.
+     * @param int $order The order hint.
+     * @param bool|string $tooltip An optional tooltip to display or false to display the tooltip.
+     * @since 2.7.0
+     * @api
+     */
+    public function addItem($menuName, $subMenuName, $url, $order = 50, $tooltip = false)
+    {
         // make sure the idSite value used is numeric (hack-y fix for #3426)
-        if (!is_numeric(Common::getRequestVar('idSite', false))) {
+        if (isset($url['idSite']) && !is_numeric($url['idSite'])) {
             $idSites = API::getInstance()->getSitesIdWithAtLeastViewAccess();
             $url['idSite'] = reset($idSites);
         }
@@ -199,8 +214,8 @@ abstract class MenuAbstract extends Singleton
     {
         foreach ($this->edits as $edit) {
             $mainMenuToEdit = $edit[0];
-            $subMenuToEdit = $edit[1];
-            $newUrl = $edit[2];
+            $subMenuToEdit  = $edit[1];
+            $newUrl         = $edit[2];
 
             if ($subMenuToEdit === null) {
                 $menuDataToEdit = @$this->menu[$mainMenuToEdit];
@@ -220,14 +235,14 @@ abstract class MenuAbstract extends Singleton
     {
         foreach($this->menuEntriesToRemove as $menuToDelete) {
 
-            if(empty($menuToDelete[1])) {
+            if (empty($menuToDelete[1])) {
                 // Delete Main Menu
-                if(isset($this->menu[$menuToDelete[0]])) {
+                if (isset($this->menu[$menuToDelete[0]])) {
                     unset($this->menu[$menuToDelete[0]]);
                 }
             } else {
                 // Delete Sub Menu
-                if(isset($this->menu[$menuToDelete[0]][$menuToDelete[1]])) {
+                if (isset($this->menu[$menuToDelete[0]][$menuToDelete[1]])) {
                     unset($this->menu[$menuToDelete[0]][$menuToDelete[1]]);
                 }
             }
@@ -240,9 +255,10 @@ abstract class MenuAbstract extends Singleton
     {
         foreach ($this->renames as $rename) {
             $mainMenuOriginal = $rename[0];
-            $subMenuOriginal = $rename[1];
-            $mainMenuRenamed = $rename[2];
-            $subMenuRenamed = $rename[3];
+            $subMenuOriginal  = $rename[1];
+            $mainMenuRenamed  = $rename[2];
+            $subMenuRenamed   = $rename[3];
+
             // Are we changing a submenu?
             if (!empty($subMenuOriginal)) {
                 if (isset($this->menu[$mainMenuOriginal][$subMenuOriginal])) {

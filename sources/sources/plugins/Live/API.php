@@ -306,7 +306,7 @@ class API extends \Piwik\Plugin\API
                 $cities[$countryCode] = array();
             }
             $city = $visit->getColumn('city');
-            if(!empty($city)) {
+            if (!empty($city)) {
                 $cities[$countryCode][] = $city;
             }
         }
@@ -325,7 +325,7 @@ class API extends \Piwik\Plugin\API
                                    'nb_visits'  => $nbVisits,
                                    'flag'       => \Piwik\Plugins\UserCountry\getFlagFromCode($countryCode),
                                    'prettyName' => \Piwik\Plugins\UserCountry\countryTranslate($countryCode));
-            if(!empty($cities[$countryCode])) {
+            if (!empty($cities[$countryCode])) {
                 $countryInfo['cities'] = array_unique($cities[$countryCode]);
             }
             $result['countries'][] = $countryInfo;
@@ -381,6 +381,8 @@ class API extends \Piwik\Plugin\API
             $dateTimePretty = $datePretty . ' ' . $visit->getColumn('serverTimePrettyFirstAction');
             $visit->setColumn('serverDateTimePrettyFirstAction', $dateTimePretty);
         }
+
+        $result['userId'] = $visit->getColumn('userId');
 
         // get visitor IDs that are adjacent to this one in log_visit
         // TODO: make sure order of visitor ids is not changed if a returning visitor visits while the user is
@@ -474,8 +476,7 @@ class API extends \Piwik\Plugin\API
         $segment = new Segment($segment, $idSite);
         $queryInfo = $segment->getSelectQuery($select, $from, $where, $whereBind, $orderBy, $groupBy);
 
-        $sql = "SELECT sub.idvisitor, sub.visit_last_action_time
-                  FROM ({$queryInfo['sql']}) as sub
+        $sql = "SELECT sub.idvisitor, sub.visit_last_action_time FROM ({$queryInfo['sql']}) as sub
                  WHERE $visitLastActionTimeCondition
                  LIMIT 1";
         $bind = array_merge($queryInfo['bind'], array($visitLastActionTime));
@@ -587,7 +588,7 @@ class API extends \Piwik\Plugin\API
                 $visitorDetailsArray['serverTimestamp'] = $visitorDetailsArray['lastActionTimestamp'];
 
                 $dateTimeVisit = Date::factory($visitorDetailsArray['lastActionTimestamp'], $timezone);
-                if($dateTimeVisit) {
+                if ($dateTimeVisit) {
                     $visitorDetailsArray['serverTimePretty'] = $dateTimeVisit->getLocalized('%time%');
                     $visitorDetailsArray['serverDatePretty'] = $dateTimeVisit->getLocalized(Piwik::translate('CoreHome_ShortDateFormat'));
                 }
@@ -701,8 +702,7 @@ class API extends \Piwik\Plugin\API
 
         // Group by idvisit so that a visitor converting 2 goals only appears once
         $sql = "
-			SELECT sub.*
-			FROM (
+			SELECT sub.* FROM (
 				" . $subQuery['sql'] . "
 				$sqlLimit
 			) AS sub

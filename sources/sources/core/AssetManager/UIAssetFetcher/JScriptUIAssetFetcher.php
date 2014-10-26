@@ -18,7 +18,7 @@ class JScriptUIAssetFetcher extends UIAssetFetcher
     protected function retrieveFileLocations()
     {
 
-        if(!empty($this->plugins)) {
+        if (!empty($this->plugins)) {
 
             /**
              * Triggered when gathering the list of all JavaScript files needed by Piwik
@@ -53,14 +53,14 @@ class JScriptUIAssetFetcher extends UIAssetFetcher
     protected function addThemeFiles()
     {
         $theme = $this->getTheme();
-        if(!$theme) {
+        if (!$theme) {
             return;
         }
-        if(in_array($theme->getThemeName(), $this->plugins)) {
+        if (in_array($theme->getThemeName(), $this->plugins)) {
 
             $jsInThemes = $this->getTheme()->getJavaScriptFiles();
 
-            if(!empty($jsInThemes)) {
+            if (!empty($jsInThemes)) {
 
                 foreach($jsInThemes as $jsFile) {
 
@@ -73,8 +73,8 @@ class JScriptUIAssetFetcher extends UIAssetFetcher
     protected function getPriorityOrder()
     {
         return array(
-            'libs/jquery/jquery.js',
-            'libs/jquery/jquery-ui.js',
+            'libs/bower_components/jquery/dist/jquery.min.js',
+            'libs/bower_components/jquery-ui/ui/minified/jquery-ui.min.js',
             'libs/jquery/jquery.browser.js',
             'libs/',
             'plugins/CoreHome/javascripts/require.js',
