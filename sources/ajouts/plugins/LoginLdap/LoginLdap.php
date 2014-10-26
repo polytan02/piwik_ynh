@@ -1,25 +1,24 @@
 <?php
 /**
- * Piwik - free/libre analytics platform
+ * Piwik - Open source web analytics
  *
  * @link http://piwik.org
  * @license http://www.gnu.org/licenses/gpl-3.0.html GPL v3 or later
+ *
+ * @category Piwik_Plugins
+ * @package LoginLdap
  */
 namespace Piwik\Plugins\LoginLdap;
 
 use Exception;
-use Piwik\Access;
-use Piwik\Common;
+use Piwik\Config;
 use Piwik\FrontController;
 use Piwik\Menu\MenuAdmin;
+use Piwik\Option;
 use Piwik\Piwik;
 use Piwik\Plugin\Manager;
 use Piwik\Plugins\Login\Login;
-use Piwik\Plugins\LoginLdap\Auth\Base as AuthBase;
-use Piwik\Plugins\LoginLdap\LdapInterop\UserMapper;
-use Piwik\Plugins\UsersManager\API as UsersManagerAPI;
 use Piwik\Session;
-use Piwik\View;
 
 /**
  *
@@ -33,17 +32,11 @@ class LoginLdap extends \Piwik\Plugin
     public function getListHooksRegistered()
     {
         $hooks = array(
-            'Menu.Admin.addItems'                    => 'addMenu',
-            'Request.initAuthenticationObject'       => 'initAuthenticationObject',
-            'User.isNotAuthorized'                   => 'noAccess',
-            'API.Request.authenticate'               => 'ApiRequestAuthenticate',
-            'AssetManager.getJavaScriptFiles'        => 'getJsFiles',
-            'AssetManager.getStylesheetFiles'        => 'getStylesheetFiles',
-            'Translate.getClientSideTranslationKeys' => 'getClientSideTranslationKeys',
-            'Controller.Login.resetPassword'         => 'disablePasswordResetForLdapUsers',
-            'Controller.LoginLdap.resetPassword'     => 'disablePasswordResetForLdapUsers',
-            'Controller.Login.confirmResetPassword'  => 'disableConfirmResetPasswordForLdapUsers',
-            'Controller.Login.confirmResetPassword'  => 'disableConfirmResetPasswordForLdapUsers'
+            'Menu.Admin.addItems'              => 'addMenu',
+            'Request.initAuthenticationObject' => 'initAuthenticationObject',
+            'User.isNotAuthorized'             => 'noAccess',
+            'API.Request.authenticate'         => 'ApiRequestAuthenticate',
+            'AssetManager.getJavaScriptFiles'  => 'getJsFiles'
         );
         return $hooks;
     }
@@ -51,33 +44,33 @@ class LoginLdap extends \Piwik\Plugin
     public function getJsFiles(&$jsFiles)
     {
         $jsFiles[] = "plugins/Login/javascripts/login.js";
-
-        $jsFiles[] = "plugins/LoginLdap/angularjs/admin/admin.controller.js";
-
-        $jsFiles[] = "plugins/LoginLdap/angularjs/login-ldap-testable-field/login-ldap-testable-field.controller.js";
-        $jsFiles[] = "plugins/LoginLdap/angularjs/login-ldap-testable-field/login-ldap-testable-field.directive.js";
     }
 
-    public function getStylesheetFiles(&$stylesheetFiles)
+    /**
+     * Set config parameters during install
+     */
+    public function install()
     {
-        $stylesheetFiles[] = "plugins/LoginLdap/angularjs/admin/admin.controller.less";
-    }
-
-    public function getClientSideTranslationKeys(&$keys)
-    {
-        $keys[] = "General_NUsers";
-        $keys[] = "LoginLdap_OneUser";
-        $keys[] = "LoginLdap_MemberOfCount";
-        $keys[] = "LoginLdap_FilterCount";
-        $keys[] = "LoginLdap_Test";
-        $keys[] = "LoginLdap_OneUser";
-        $keys[] = "General_NUsers";
+        Config::getInstance()->LoginLdap = array(
+            'serverUrl'      => 'ldap://localhost/',
+            'ldapPort'       => '389',
+            'baseDn'         => 'OU=users,DC=localhost,DC=com',
+            'userIdField'    => 'userPrincipalName',
+            'mailField'      => 'mail',
+            'aliasField'     => 'cn',
+            'usernameSuffix' => '',
+            'adminUser'      => '',
+            'adminPass'      => '',
+            'memberOf'       => '',
+            'filter'         => '(objectClass=person)',
+            'useKerberos'    => 'false',
+            'debugEnabled'    => 'false'
+        );
+        Config::getInstance()->forceSave();
     }
 
     /**
      * Deactivate default Login module, as both cannot be activated together
-     *
-     * TODO: shouldn't disable Login plugin but have to wait until Dependency Injection is added to core
      */
     public function activate()
     {
@@ -93,42 +86,6 @@ class LoginLdap extends \Piwik\Plugin
     {
         if (Manager::getInstance()->isPluginActivated("Login") == false) {
             Manager::getInstance()->activatePlugin("Login");
-        }
-    }
-
-    public function disableConfirmResetPasswordForLdapUsers()
-    {
-        $login = Common::getRequestVar('login', false);
-        if (empty($login)) {
-            return;
-        }
-
-        if ($this->isUserLdapUser($login)) {
-            // redirect to login w/ error message
-            $errorMessage = Piwik::translate("LoginLdap_UnsupportedPasswordReset");
-            echo FrontController::getInstance()->dispatch('LoginLdap', 'login', array($errorMessage));
-
-            exit;
-        }
-    }
-
-    public function disablePasswordResetForLdapUsers()
-    {
-        $login = Common::getRequestVar('form_login', false);
-        if (empty($login)) {
-            return;
-        }
-
-        if ($this->isUserLdapUser($login)) {
-            $errorMessage = Piwik::translate("LoginLdap_UnsupportedPasswordReset");
-
-            $view = new View("@Login/resetPassword");
-            $view->infoMessage = null;
-            $view->formErrors = array($errorMessage);
-
-            echo $view->render();
-
-            exit;
         }
     }
 
@@ -148,12 +105,12 @@ class LoginLdap extends \Piwik\Plugin
      */
     function addMenu()
     {
-        MenuAdmin::getInstance()->add('General_Settings', 'LDAP', array('module' => 'LoginLdap', 'action' => 'admin'),
-            Piwik::hasUserSuperUserAccess(), $order = 30);
+        MenuAdmin::getInstance()->add('CoreAdminHome_MenuManage', 'LoginLdap_MenuLdap', array('module' => 'LoginLdap', 'action' => 'admin'),
+            Piwik::hasUserSuperUserAccess(), $order = 3);
     }
 
     /**
-     * Set login name and authentication token for authentication request.
+     * Set login name and autehntication token for authentication request.
      * Listens to API.Request.authenticate hook.
      */
     public function ApiRequestAuthenticate($tokenAuth)
@@ -168,18 +125,44 @@ class LoginLdap extends \Piwik\Plugin
      */
     function initAuthenticationObject($activateCookieAuth = false)
     {
-        $auth = AuthBase::factory();
+        $auth = new LdapAuth();
         \Piwik\Registry::set('auth', $auth);
 
         Login::initAuthenticationFromCookie($auth, $activateCookieAuth);
     }
 
-    private function isUserLdapUser($login)
+    /**
+    * Removes stored password reset info if it exists.
+    *
+    * @param string $login The user login to check for.
+    */
+    public static function removePasswordResetInfo($login)
     {
-        $user = Access::doAsSuperUser(function () use ($login) {
-            return UsersManagerAPI::getInstance()->getUser($login);
-        });
+        $optionName = self::getPasswordResetInfoOptionName($login);
+        Option::delete($optionName);
+    }
 
-        return UserMapper::isUserLdapUser($user);
+    /**
+    * Gets password hash stored in password reset info.
+    *
+    * @param string $login The user login to check for.
+    * @return string|false The hashed password or false if no reset info exists.
+    */
+    public static function getPasswordToResetTo($login)
+    {
+        $optionName = self::getPasswordResetInfoOptionName($login);
+        return Option::get($optionName);
+    }
+
+    /**
+    * Gets the option name for the option that will store a user's password change
+    * request.
+    *
+    * @param string $login The user login for whom a password change was requested.
+    * @return string
+    */
+    public static function getPasswordResetInfoOptionName($login)
+    {
+        return $login . '_reset_password_info';
     }
 }
