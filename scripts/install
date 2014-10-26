@@ -171,3 +171,10 @@ sudo yunohost app ssowatconf
 
 # Clean hosts
 sudo sed -i '/yunopiwik/d' /etc/hosts
+
+if [ "$log_analyse" = "Yes" ]
+then
+    # Programme la première analyse de log
+    sed -i "s@__FINALPATH__@$final_path@g" ../conf/cron_piwik_loganalytics_first
+    sudo cp ../conf/cron_piwik_loganalytics_first /etc/cron.d/piwik_loganalytics_first
+fi
