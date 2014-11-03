@@ -112,13 +112,13 @@ sudo cp -a ../sources/ajouts/* $final_path
 
 # Ajout de l'administrateur de piwik à partir du plugin ldap.
 # Piwik étant très pointilleux avec l'authentification, on se connecte en header HTTP avec l'user adminP créer à l'installation
-curl -kL --user adminP:$db_pwd -d username="$admin" "https://$domain$path/index.php?module=LoginLdap&action=loadUser&form=loadUserForm" > /dev/null
+#curl -kL --user adminP:$db_pwd -d username="$admin" "https://$domain$path/index.php?module=LoginLdap&action=loadUser&form=loadUserForm" > /dev/null
 
 # On accède directement à la base de donnée de piwik pour passer l'utilisateur ajouté en administrateur de piwik. Sans quoi il ne pourra pas se connecter, n'ayant aucun droit!
-mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "UPDATE piwik.piwik_user SET superuser_access = '1' WHERE piwik_user.login = \"$admin\""
+#mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "UPDATE piwik.piwik_user SET superuser_access = '1' WHERE piwik_user.login = \"$admin\""
 
 # Suppression de l'user adminP de l'installation, qui n'est plus utile à présent.
-mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "DELETE FROM piwik.piwik_user WHERE piwik_user.login = 'adminP'"
+#mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "DELETE FROM piwik.piwik_user WHERE piwik_user.login = 'adminP'"
 
 
 if [ "$geoip_plugin" = "Yes" ]
