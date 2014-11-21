@@ -12,7 +12,10 @@ use Exception;
 use Piwik\Common;
 use Piwik\Config;
 use Piwik\Cookie;
+use Piwik\Exception\InvalidRequestParameterException;
+use Piwik\Exception\UnexpectedWebsiteFoundException;
 use Piwik\IP;
+use Piwik\Network\IPUtils;
 use Piwik\Piwik;
 use Piwik\Plugins\CustomVariables\CustomVariables;
 use Piwik\Registry;
@@ -389,7 +392,7 @@ class Request
         Piwik::postEvent('Tracker.Request.getIdSite', array(&$idSite, $this->params));
 
         if ($idSite <= 0) {
-            throw new Exception('Invalid idSite: \'' . $idSite . '\'');
+            throw new UnexpectedWebsiteFoundException('Invalid idSite: \'' . $idSite . '\'');
         }
 
         return $idSite;
@@ -522,7 +525,7 @@ class Request
             $idVisitor = $this->getForcedVisitorId();
             if (!empty($idVisitor)) {
                 if (strlen($idVisitor) != Tracker::LENGTH_HEX_ID_STRING) {
-                    throw new Exception("Visitor ID (cid) $idVisitor must be " . Tracker::LENGTH_HEX_ID_STRING . " characters long");
+                    throw new InvalidRequestParameterException("Visitor ID (cid) $idVisitor must be " . Tracker::LENGTH_HEX_ID_STRING . " characters long");
                 }
                 Common::printDebug("Request will be recorded for this idvisitor = " . $idVisitor);
                 $found = true;
@@ -563,9 +566,7 @@ class Request
 
     public function getIp()
     {
-        $ipString = $this->getIpString();
-        $ip = IP::P2N($ipString);
-        return $ip;
+        return IPUtils::stringToBinaryIP($this->getIpString());
     }
 
     public function getForcedUserId()

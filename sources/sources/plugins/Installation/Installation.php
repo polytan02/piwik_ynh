@@ -12,6 +12,7 @@ use Piwik\Common;
 use Piwik\Config;
 use Piwik\FrontController;
 use Piwik\Piwik;
+use Piwik\Plugins\Installation\Exception\DatabaseConnectionFailedException;
 use Piwik\Translate;
 use Piwik\View as PiwikView;
 
@@ -42,7 +43,10 @@ class Installation extends \Piwik\Plugin
         $view = new PiwikView("@Installation/cannotConnectToDb");
         $view->exceptionMessage = $exception->getMessage();
 
-        Piwik_ExitWithMessage($view->render());
+        $ex = new DatabaseConnectionFailedException($view->render());
+        $ex->setIsHtmlMessage();
+
+        throw $ex;
     }
 
     public function dispatchIfNotInstalledYet(&$module, &$action, &$parameters)

@@ -49,7 +49,7 @@ sudo sed -i "s@NAMETOCHANGE@piwik@g" ../conf/nginx.conf
 
 # Copy files to right place
 sudo mkdir -p $final_path
-sudo cp -a ../sources/sources/* $final_path
+sudo cp -a ../sources/sources/.* $final_path
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/piwik.conf
 
 # Set right permissions for curl install
@@ -110,9 +110,16 @@ sed -i "s@__FINALPATH__@$final_path@g" ../sources/ajouts/misc/log-analytics/extr
 # Copy supplementary files to right place
 sudo cp -a ../sources/ajouts/* $final_path
 
+
 # Ajout de l'administrateur de piwik à partir du plugin ldap.
-# Piwik étant très pointilleux avec l'authentification, on se connecte en header HTTP avec l'user adminP créer à l'installation
-curl -kL --user adminP:$db_pwd -d username="$admin" "https://$domain$path/index.php?module=LoginLdap&action=loadUser&form=loadUserForm" > /dev/null
+# Piwik étant très pointilleux avec l'authentification, on se connecte en header HTTP avec l'user adminP créé à l'installation
+# curl -kL --user adminP:$db_pwd -d username="$admin" "https://$domain$path/index.php?module=LoginLdap&action=loadUser&form=loadUserForm" > /dev/null
+
+# Installation de php5-cli pour l'ajout de l'administrateur via le plugin ldap
+sudo apt-get install php5-cli -qy
+
+# Ajout de l'administrateur via le plugin ldap
+sudo "$final_path/console" loginldap:synchronize-users --login="$admin"
 
 # On accède directement à la base de donnée de piwik pour passer l'utilisateur ajouté en administrateur de piwik. Sans quoi il ne pourra pas se connecter, n'ayant aucun droit!
 mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "UPDATE piwik.piwik_user SET superuser_access = '1' WHERE piwik_user.login = \"$admin\""
@@ -121,7 +128,13 @@ mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "UPDATE piwik.piwik_user
 mysql -h localhost -u $db_user -p$db_pwd -s $db_user -e "DELETE FROM piwik.piwik_user WHERE piwik_user.login = 'adminP'"
 
 
-if [ "$geoip_plugin" = "Yes" ]
+# Autorisation à l'user mysql piwik d'utiliser LOAD DATA INFILE
+mysql -h localhost -u root -p$(sudo cat /etc/yunohost/mysql) -s piwik -e "GRANT FILE on *.* to piwik@localhost"
+sudo chmod +x -R $final_path/tmp/assets/
+sudo service mysql restart
+
+
+if [ "$geoip_plugin" = "Yes" ] || [ "$geoip_plugin" = "yes" ] || [ "$log_analyse" = "YES" ] || [ "$geoip_plugin" = "Y" ] || [ "$geoip_plugin" = "y" ]
 then
     # Configuration de la géolocalisation par GeoIP PECL
     # Installation des paquets nécessaires à GeoIP
@@ -145,7 +158,7 @@ then
 fi
 
 
-if [ "$log_analyse" = "Yes" ]
+if [ "$log_analyse" = "Yes" ] || [ "$log_analyse" = "yes" ] || [ "$log_analyse" = "YES" ] || [ "$log_analyse" = "Y" ] || [ "$log_analyse" = "y" ]
 then
     # Mise en place d'une tâche cron  sur www-data pour l'analyse de log nginx
 	sed -i "s@__FINALPATH__@$final_path@g" ../conf/cron_piwik_loganalytics
@@ -158,7 +171,8 @@ fi
 
 
 # Files owned by www-data, for upgrade
-sudo find $final_path -type f -print0 | xargs -0 sudo chmod 644		# Applique les permissions sur les fichiers (rw-r--r--)
+sudo chmod 644 -R $final_path
+# sudo find $final_path -type f -print0 | xargs -0 sudo chmod 644		# Applique les permissions sur les fichiers (rw-r--r--)
 xargs -a ../conf/Liste_exec -I{} sudo chmod 554 "$final_path/{}"	# Maintient les droits d'exec sur les fichiers les nécessitant, pour ne pas empêcher l'exécution des scripts nécessaires (r-xr-xr--)
 sudo find $final_path -type d -print0 | xargs -0 sudo chmod 755 # (rwxr-xr-x)
 sudo chown -R www-data:root $final_path
@@ -172,7 +186,7 @@ sudo yunohost app ssowatconf
 # Clean hosts
 sudo sed -i '/yunopiwik/d' /etc/hosts
 
-if [ "$log_analyse" = "Yes" ]
+if [ "$log_analyse" = "Yes" ] || [ "$log_analyse" = "yes" ] || [ "$log_analyse" = "YES" ] || [ "$log_analyse" = "Y" ] || [ "$log_analyse" = "y" ]
 then
     # Programme la première analyse de log
     sed -i "s@__FINALPATH__@$final_path@g" ../conf/cron_piwik_loganalytics_first
