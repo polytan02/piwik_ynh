@@ -3,6 +3,8 @@ Piwik for YunoHost
 
 [Yunohost project](https://yunohost.org/#/)
 
+Measurement Software web statistics to analyze traffic to your sites.
+
 http://piwik.org/
 
 
