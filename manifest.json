@@ -5,7 +5,7 @@
         "en": "Measurement Software web statistics to analyze traffic to your sites.",
 	"fr": "Logiciel de mesure de statistiques web, pour analyser le trafic de vos sites."
     },
-	"version": "2.9.1",
+	"version": "2.11.0",
 	"url": "http://piwik.org/",
     "maintainer": {
         "name": "Maniack Crudelis",
