@@ -12,12 +12,12 @@ namespace Piwik;
 use Exception;
 use Piwik\API\Request;
 use Piwik\API\ResponseBuilder;
+use Piwik\Container\StaticContainer;
 use Piwik\Exception\AuthenticationFailedException;
 use Piwik\Http\Router;
 use Piwik\Plugin\Controller;
 use Piwik\Plugin\Report;
 use Piwik\Plugin\Widgets;
-use Piwik\Plugins\CoreAdminHome\CustomLogo;
 use Piwik\Session;
 
 /**
@@ -229,7 +229,7 @@ class FrontController extends Singleton
                 Profiler::printQueryCount();
             }
         } catch (Exception $e) {
-            Log::verbose($e);
+            Log::debug($e);
         }
     }
 
@@ -253,6 +253,8 @@ class FrontController extends Singleton
     {
         $lastError = error_get_last();
         if (!empty($lastError) && $lastError['type'] == E_ERROR) {
+            Common::sendResponseCode(500);
+
             $controller = FrontController::getInstance();
             $controller->init();
             $message = $controller->dispatch('CorePluginsAdmin', 'safemode', array($lastError));
@@ -262,7 +264,7 @@ class FrontController extends Singleton
     }
 
     /**
-     * Loads the config file and assign to the global registry
+     * Loads the config file
      * This is overridden in tests to ensure test config file is used
      *
      * @return Exception
@@ -308,28 +310,26 @@ class FrontController extends Singleton
         }
         $initialized = true;
 
-        Registry::set('timer', new Timer);
+        $exceptionToThrow = self::createConfigObject();
+
+        $tmpPath = StaticContainer::get('path.tmp');
 
         $directoriesToCheck = array(
-            '/tmp/',
-            '/tmp/assets/',
-            '/tmp/cache/',
-            '/tmp/logs/',
-            '/tmp/tcpdf/',
-            '/tmp/templates_c/',
+            $tmpPath,
+            $tmpPath . '/assets/',
+            $tmpPath . '/cache/',
+            $tmpPath . '/logs/',
+            $tmpPath . '/tcpdf/',
+            $tmpPath . '/templates_c/',
         );
 
-        Translate::loadEnglishTranslation();
-
         Filechecks::dieIfDirectoriesNotWritable($directoriesToCheck);
-
-        $exceptionToThrow = self::createConfigObject();
 
         $this->handleMaintenanceMode();
         $this->handleProfiler();
         $this->handleSSLRedirection();
 
-        Plugin\Manager::getInstance()->loadPluginTranslations('en');
+        Plugin\Manager::getInstance()->loadPluginTranslations();
         Plugin\Manager::getInstance()->loadActivatedPlugins();
 
         if ($exceptionToThrow) {
@@ -396,6 +396,8 @@ class FrontController extends Singleton
          */
         Piwik::postEvent('Request.dispatchCoreAndPluginUpdatesScreen');
 
+        Updater::throwIfPiwikVersionIsOlderThanDBSchema();
+
         \Piwik\Plugin\Manager::getInstance()->installLoadedPlugins();
 
         // ensure the current Piwik URL is known for later use
@@ -413,14 +415,14 @@ class FrontController extends Singleton
          * **Example**
          *
          *     Piwik::addAction('Request.initAuthenticationObject', function() {
-         *         Piwik\Registry::set('auth', new MyAuthImplementation());
+         *         StaticContainer::getContainer()->set('Piwik\Auth', new MyAuthImplementation());
          *     });
          */
         Piwik::postEvent('Request.initAuthenticationObject');
         try {
-            $authAdapter = Registry::get('auth');
+            $authAdapter = StaticContainer::get('Piwik\Auth');
         } catch (Exception $e) {
-            $message = "Authentication object cannot be found in the Registry. Maybe the Login plugin is not activated?
+            $message = "Authentication object cannot be found in the container. Maybe the Login plugin is not activated?
                         <br />You can activate the plugin by adding:<br />
                         <code>Plugins[] = Login</code><br />
                         under the <code>[Plugins]</code> section in your config/config.ini.php";
@@ -439,7 +441,6 @@ class FrontController extends Singleton
         }
         SettingsServer::raiseMemoryLimitIfNecessary();
 
-        Translate::reloadLanguage();
         \Piwik\Plugin\Manager::getInstance()->postLoadPlugins();
 
         /**
@@ -475,7 +476,7 @@ class FrontController extends Singleton
             throw new Exception("Invalid module name '$module'");
         }
 
-        $module = Request::renameModule($module);
+        list($module, $action) = Request::getRenamedModuleAndAction($module, $action);
 
         if (!\Piwik\Plugin\Manager::getInstance()->isPluginActivated($module)) {
             throw new PluginDeactivatedException($module);
@@ -605,50 +606,6 @@ class FrontController extends Singleton
          * @param array $parameters The arguments passed to the controller action.
          */
         Piwik::postEvent('Request.dispatch.end', array(&$result, $module, $action, $parameters));
-        return $result;
-    }
-
-    /**
-     * Returns HTML that displays an exception's error message (and possibly stack trace).
-     * The result of this method is echo'd by dispatch.php.
-     *
-     * @param Exception $ex The exception to use when generating the error page's HTML.
-     * @return string The HTML to echo.
-     */
-    public function getErrorResponse(Exception $ex)
-    {
-        $debugTrace = $ex->getTraceAsString();
-
-        $message = $ex->getMessage();
-
-        if (!method_exists($ex, 'isHtmlMessage') || !$ex->isHtmlMessage()) {
-            $message = Common::sanitizeInputValue($message);
-        }
-
-        $logo = new CustomLogo();
-
-        $logoHeaderUrl = false;
-        $logoFaviconUrl = false;
-        try {
-            $logoHeaderUrl = $logo->getHeaderLogoUrl();
-            $logoFaviconUrl = $logo->getPathUserFavicon();
-        } catch (Exception $ex) {
-            Log::debug($ex);
-        }
-
-        $result = Piwik_GetErrorMessagePage($message, $debugTrace, true, true, $logoHeaderUrl, $logoFaviconUrl);
-
-        /**
-         * Triggered before a Piwik error page is displayed to the user.
-         *
-         * This event can be used to modify the content of the error page that is displayed when
-         * an exception is caught.
-         *
-         * @param string &$result The HTML of the error page.
-         * @param Exception $ex The Exception displayed in the error page.
-         */
-        Piwik::postEvent('FrontController.modifyErrorPage', array(&$result, $ex));
-
         return $result;
     }
 }

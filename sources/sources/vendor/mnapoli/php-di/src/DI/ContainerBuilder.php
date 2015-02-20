@@ -11,11 +11,13 @@ namespace DI;
 
 use DI\Definition\DefinitionManager;
 use DI\Definition\Source\AnnotationDefinitionSource;
+use DI\Definition\Source\ArrayDefinitionSource;
+use DI\Definition\Source\ChainableDefinitionSource;
 use DI\Definition\Source\PHPFileDefinitionSource;
 use DI\Definition\Source\ReflectionDefinitionSource;
 use DI\Proxy\ProxyFactory;
 use Doctrine\Common\Cache\Cache;
-use Interop\Container\ContainerInterface as ContainerInteropInterface;
+use Interop\Container\ContainerInterface;
 use InvalidArgumentException;
 
 /**
@@ -73,15 +75,14 @@ class ContainerBuilder
 
     /**
      * If PHP-DI is wrapped in another container, this references the wrapper.
-     * @var ContainerInteropInterface
+     * @var ContainerInterface
      */
     private $wrapperContainer;
 
     /**
-     * Files of definitions for the container.
-     * @var string[]
+     * @var ChainableDefinitionSource[]
      */
-    private $files = array();
+    private $definitionSources = array();
 
     /**
      * Build a container configured for the dev environment.
@@ -112,10 +113,10 @@ class ContainerBuilder
         // Definition sources
         $firstSource = null;
         $lastSource = null;
-        foreach (array_reverse($this->files) as $file) {
-            $source = new PHPFileDefinitionSource($file);
+        foreach (array_reverse($this->definitionSources) as $source) {
+            /** @var $source ChainableDefinitionSource */
             // Chain file sources
-            if ($lastSource instanceof PHPFileDefinitionSource) {
+            if ($lastSource instanceof ChainableDefinitionSource) {
                 $lastSource->chain($source);
             } else {
                 $firstSource = $source;
@@ -231,10 +232,10 @@ class ContainerBuilder
      * If PHP-DI's container is wrapped by another container, we can
      * set this so that PHP-DI will use the wrapper rather than itself for building objects.
      *
-     * @param ContainerInteropInterface $otherContainer
+     * @param ContainerInterface $otherContainer
      * @return $this
      */
-    public function wrapContainer(ContainerInteropInterface $otherContainer)
+    public function wrapContainer(ContainerInterface $otherContainer)
     {
         $this->wrapperContainer = $otherContainer;
 
@@ -242,12 +243,30 @@ class ContainerBuilder
     }
 
     /**
-     * Add a file containing definitions to the container.
+     * Add definitions to the container.
      *
-     * @param string $file
+     * @param string|array|ChainableDefinitionSource $definitions Can be an array of definitions,
+     *                                                            the name of a file containing definitions
+     *                                                            or a ChainableDefinitionSource object.
+     * @return $this
      */
-    public function addDefinitions($file)
+    public function addDefinitions($definitions)
     {
-        $this->files[] = $file;
+        if (is_string($definitions)) {
+            // File
+            $definitions = new PHPFileDefinitionSource($definitions);
+        } elseif (is_array($definitions)) {
+            $definitions = new ArrayDefinitionSource($definitions);
+        } elseif (! $definitions instanceof ChainableDefinitionSource) {
+            throw new InvalidArgumentException(sprintf(
+                '%s parameter must be a string or implement ChainableDefinitionSource, %s given',
+                'ContainerBuilder::addDefinitions()',
+                is_object($definitions) ? get_class($definitions) : gettype($definitions)
+            ));
+        }
+
+        $this->definitionSources[] = $definitions;
+
+        return $this;
     }
 }

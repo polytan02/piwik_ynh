@@ -9,7 +9,6 @@
         "ColumnSocial": "Mạng xã hội",
         "ColumnWebsite": "Địa chỉ trang web",
         "ColumnWebsitePage": "Trang web",
-        "DetailsByReferrerType": "Chi tiết bởi kiểu Referrer",
         "DirectEntry": "Nhập trực tiếp",
         "DirectEntryDocumentation": "Một du khách đã nhập vào URL trong trình duyệt của mình và bắt đầu trình duyệt trên trang web của bạn - người đó đã vào trang web một cách trực tiếp.",
         "Distinct": "Các Referrer riêng biệt bởi kiểu Referrer",
@@ -48,7 +47,6 @@
         "WebsitesReportDocumentation": "Trong bảng này, bạn có thể thấy những website đã chỉ dẫn khách truy cập tới trang web của bạn. %s bằng cách click trên một hàng trong bảng, bạn có thể thấy những URL mà các link tới website của bạn đã dùng.",
         "WidgetExternalWebsites": "Các Website Referrer",
         "WidgetGetAll": "Tất cả các người được giới thiệu",
-        "WidgetKeywords": "Các từ khóa",
         "WidgetSocials": "Danh sách các mạng xã hội",
         "WidgetTopKeywordsForPages": "Từ khóa đứng đầu cho URL trang"
     }

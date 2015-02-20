@@ -18,23 +18,37 @@ use Piwik\Menu\MenuTop;
 use Piwik\Menu\MenuUser;
 use Piwik\Nonce;
 use Piwik\Piwik;
+use Piwik\Plugin\ControllerAdmin;
 use Piwik\Plugins\CorePluginsAdmin\UpdateCommunication;
 use Piwik\Plugins\CustomVariables\CustomVariables;
 use Piwik\Plugins\LanguagesManager\API as APILanguagesManager;
 use Piwik\Plugins\LanguagesManager\LanguagesManager;
+use Piwik\Plugins\PrivacyManager\DoNotTrackHeaderChecker;
 use Piwik\Plugins\SitesManager\API as APISitesManager;
 use Piwik\Settings\Manager as SettingsManager;
+use Piwik\Settings\SystemSetting;
+use Piwik\Settings\UserSetting;
 use Piwik\Site;
 use Piwik\Tracker\IgnoreCookie;
+use Piwik\Translation\Translator;
 use Piwik\Url;
 use Piwik\View;
 
-/**
- *
- */
-class Controller extends \Piwik\Plugin\ControllerAdmin
+class Controller extends ControllerAdmin
 {
     const SET_PLUGIN_SETTINGS_NONCE = 'CoreAdminHome.setPluginSettings';
+
+    /**
+     * @var Translator
+     */
+    private $translator;
+
+    public function __construct(Translator $translator)
+    {
+        $this->translator = $translator;
+
+        parent::__construct();
+    }
 
     public function index()
     {
@@ -44,7 +58,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
 
     public function generalSettings()
     {
-        Piwik::checkUserHasSomeAdminAccess();
+        Piwik::checkUserHasSuperUserAccess();
         $view = new View('@CoreAdminHome/generalSettings');
 
         if (Piwik::hasUserSuperUserAccess()) {
@@ -68,7 +82,53 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         return $view->render();
     }
 
-    public function pluginSettings()
+    public function adminPluginSettings()
+    {
+        Piwik::checkUserHasSuperUserAccess();
+
+        $settings = $this->getPluginSettings();
+
+        $vars = array(
+            'nonce'                      => Nonce::getNonce(static::SET_PLUGIN_SETTINGS_NONCE),
+            'pluginsSettings'            => $this->getSettingsByType($settings, 'admin'),
+            'firstSuperUserSettingNames' => $this->getFirstSuperUserSettingNames($settings),
+            'mode' => 'admin'
+        );
+
+        return $this->renderTemplate('pluginSettings', $vars);
+    }
+
+    /**
+     * @param \Piwik\Plugin\Settings[] $pluginsSettings
+     * @return array   array([pluginName] => [])
+     */
+    private function getSettingsByType($pluginsSettings, $mode)
+    {
+        $byType = array();
+
+        foreach ($pluginsSettings as $pluginName => $pluginSettings) {
+            $settings = array();
+
+            foreach ($pluginSettings->getSettingsForCurrentUser() as $setting) {
+                if ('admin' === $mode && $setting instanceof SystemSetting) {
+                    $settings[] = $setting;
+                } elseif ('user' === $mode && $setting instanceof UserSetting) {
+                    $settings[] = $setting;
+                }
+            }
+
+            if (!empty($settings)) {
+                $byType[$pluginName] = array(
+                    'introduction' => $pluginSettings->getIntroduction(),
+                    'settings' => $settings
+                );
+            }
+        }
+
+        return $byType;
+    }
+
+    public function userPluginSettings()
     {
         Piwik::checkUserIsNotAnonymous();
 
@@ -76,8 +136,9 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
 
         $vars = array(
             'nonce'                      => Nonce::getNonce(static::SET_PLUGIN_SETTINGS_NONCE),
-            'pluginSettings'             => $settings,
-            'firstSuperUserSettingNames' => $this->getFirstSuperUserSettingNames($settings)
+            'pluginsSettings'            => $this->getSettingsByType($settings, 'user'),
+            'firstSuperUserSettingNames' => $this->getFirstSuperUserSettingNames($settings),
+            'mode' => 'user'
         );
 
         return $this->renderTemplate('pluginSettings', $vars);
@@ -122,7 +183,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         if (!Nonce::verifyNonce(static::SET_PLUGIN_SETTINGS_NONCE, $nonce)) {
             return json_encode(array(
                 'result' => 'error',
-                'message' => Piwik::translate('General_ExceptionNonceMismatch')
+                'message' => $this->translator->translate('General_ExceptionNonceMismatch')
             ));
         }
 
@@ -141,13 +202,26 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
                 }
             }
 
+        } catch (Exception $e) {
+            $message = $e->getMessage();
+
+            if (!empty($setting)) {
+                $message = $setting->title . ': ' . $message;
+            }
+
+            $message = html_entity_decode($message, ENT_QUOTES, 'UTF-8');
+            return json_encode(array('result' => 'error', 'message' => $message));
+        }
+
+        try {
             foreach ($pluginsSettings as $pluginSetting) {
                 $pluginSetting->save();
             }
-
         } catch (Exception $e) {
-            $message = html_entity_decode($e->getMessage(), ENT_QUOTES, 'UTF-8');
-            return json_encode(array('result' => 'error', 'message' => $message));
+            return json_encode(array(
+                'result' => 'error',
+                'message' => $this->translator->translate('CoreAdminHome_PluginSettingsSaveFailed'))
+            );
         }
 
         Nonce::discardNonce(static::SET_PLUGIN_SETTINGS_NONCE);
@@ -218,7 +292,7 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         $view->idSite = Common::getRequestVar('idSite', $defaultIdSite, 'int');
 
         $view->defaultReportSiteName = Site::getNameFor($view->idSite);
-        $view->defaultSiteRevenue = \Piwik\MetricsFormatter::getCurrencySymbol($view->idSite);
+        $view->defaultSiteRevenue = \Piwik\Metrics\Formatter::getCurrencySymbol($view->idSite);
         $view->maxCustomVariables = CustomVariables::getMaxCustomVariables();
 
         $allUrls = APISitesManager::getInstance()->getSiteUrlsFromId($view->idSite);
@@ -235,7 +309,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         // get currencies for each viewable site
         $view->currencySymbols = APISitesManager::getInstance()->getCurrencySymbols();
 
-        $view->serverSideDoNotTrackEnabled = \Piwik\Plugins\PrivacyManager\DoNotTrackHeaderChecker::isActive();
+        $dntChecker = new DoNotTrackHeaderChecker();
+        $view->serverSideDoNotTrackEnabled = $dntChecker->isActive();
 
         return $view->render();
     }

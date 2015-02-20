@@ -154,6 +154,17 @@ class API extends \Piwik\Plugin\API
         $this->checkSecondaryDimension($name, $secondaryDimension);
         $recordName = $this->getRecordNameForAction($name, $secondaryDimension);
         $dataTable = Archive::getDataTableFromArchive($recordName, $idSite, $period, $date, $segment, $expanded, $idSubtable);
+
+        if (empty($idSubtable)) {
+            $dataTable->filter('AddSegmentValue', array(function ($label) {
+                if ($label === Archiver::EVENT_NAME_NOT_SET) {
+                    return false;
+                }
+
+                return $label;
+            }));
+        }
+
         $this->filterDataTable($dataTable);
         return $dataTable;
     }
@@ -217,14 +228,5 @@ class API extends \Piwik\Plugin\API
                 $row->setColumn('label', Piwik::translate('General_NotDefined', Piwik::translate('Events_EventName')));
             }
         });
-
-        // add processed metric avg_event_value
-        $dataTable->queueFilter('ColumnCallbackAddColumnQuotient',
-            array('avg_event_value',
-                  'sum_event_value',
-                  'nb_events_with_value',
-                  $precision = 2,
-                  $shouldSkipRows = true)
-        );
     }
 }

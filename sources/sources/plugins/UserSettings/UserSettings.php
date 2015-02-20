@@ -23,37 +23,43 @@ class UserSettings extends \Piwik\Plugin
     public function getListHooksRegistered()
     {
         return array(
-            'Metrics.getDefaultMetricTranslations' => 'addMetricTranslations',
-            'Live.getAllVisitorDetails'            => 'extendVisitorDetails'
+            'Request.getRenamedModuleAndAction'    => 'renameDeprecatedModuleAndAction',
         );
     }
 
-    public function extendVisitorDetails(&$visitor, $details)
+    /**
+     * Maps the deprecated actions that were 'moved' to DevicesDetection plugin
+     *
+     * @deprecated since 2.10.0 and will be removed from May 1st 2015
+     * @param $module
+     * @param $action
+     */
+    public function renameDeprecatedModuleAndAction(&$module, &$action)
     {
-        $instance = new Visitor($details);
-
-        $visitor['operatingSystem']          = $instance->getOperatingSystem();
-        $visitor['operatingSystemCode']      = $instance->getOperatingSystemCode();
-        $visitor['operatingSystemShortName'] = $instance->getOperatingSystemShortName();
-        $visitor['operatingSystemIcon']      = $instance->getOperatingSystemIcon();
-        $visitor['browserName']              = $instance->getBrowser();
-        $visitor['browserIcon']              = $instance->getBrowserIcon();
-        $visitor['browserCode']              = $instance->getBrowserCode();
-        $visitor['browserVersion']           = $instance->getBrowserVersion();
-        $visitor['screenType']               = $instance->getScreenType();
-        $visitor['resolution']               = $instance->getResolution();
-        $visitor['screenTypeIcon']           = $instance->getScreenTypeIcon();
-        $visitor['plugins']                  = $instance->getPlugins();
-        $visitor['pluginsIcons']             = $instance->getPluginIcons();
-    }
-
-    public function addMetricTranslations(&$translations)
-    {
-        $metrics = array(
-            'nb_visits_percentage' => Piwik::translate('General_ColumnPercentageVisits')
+        $movedMethods = array(
+            'getBrowser' => 'getBrowsers',
+            'getBrowserVersion' => 'getBrowserVersions',
+            'getMobileVsDesktop' => 'getType',
+            'getOS' => 'getOsVersions',
+            'getOSFamily' => 'getOsFamilies',
+            'getBrowserType' => 'getBrowserEngines',
         );
 
-        $translations = array_merge($translations, $metrics);
-    }
+        if ($module == 'UserSettings' && array_key_exists($action, $movedMethods)) {
+            $module = 'DevicesDetection';
+            $action = $movedMethods[$action];
+        }
 
+        if ($module == 'UserSettings' && ($action == 'getResolution' || $action == 'getConfiguration')) {
+            $module = 'Resolution';
+        }
+
+        if ($module == 'UserSettings' && ($action == 'getLanguage' || $action == 'getLanguageCode')) {
+            $module = 'UserLanguage';
+        }
+
+        if ($module == 'UserSettings' && $action == 'getPlugin') {
+            $module = 'DevicePlugins';
+        }
+    }
 }

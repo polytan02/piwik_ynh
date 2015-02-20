@@ -10,16 +10,17 @@ namespace Piwik\Plugins\PrivacyManager;
 
 use Piwik\Common;
 use Piwik\Config as PiwikConfig;
+use Piwik\Container\StaticContainer;
 use Piwik\Date;
 use Piwik\Db;
-use Piwik\MetricsFormatter;
+use Piwik\Metrics\Formatter;
 use Piwik\Nonce;
 use Piwik\Notification;
 use Piwik\Option;
 use Piwik\Piwik;
 use Piwik\Plugins\DBStats\MySQLMetadataProvider;
 use Piwik\Plugins\LanguagesManager\LanguagesManager;
-use Piwik\TaskScheduler;
+use Piwik\Scheduler\Scheduler;
 use Piwik\View;
 
 /**
@@ -133,7 +134,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         if (Piwik::hasUserSuperUserAccess()) {
             $view->deleteData = $this->getDeleteDataInfo();
             $view->anonymizeIP = $this->getAnonymizeIPInfo();
-            $view->dntSupport = DoNotTrackHeaderChecker::isActive();
+            $dntChecker = new DoNotTrackHeaderChecker();
+            $view->dntSupport = $dntChecker->isActive();
             $view->canDeleteLogActions = Db::isLockPrivilegeGranted();
             $view->dbUser = PiwikConfig::getInstance()->database['username'];
             $view->deactivateNonce = Nonce::getNonce(self::DEACTIVATE_DNT_NONCE);
@@ -196,8 +198,9 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
             $totalBytes += $status['Data_length'] + $status['Index_length'];
         }
 
+        $formatter = new Formatter();
         $result = array(
-            'currentSize' => MetricsFormatter::getPrettySizeFromBytes($totalBytes)
+            'currentSize' => $formatter->getPrettySizeFromBytes($totalBytes)
         );
 
         // if the db size estimate feature is enabled, get the estimate
@@ -224,8 +227,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
                 }
             }
 
-            $result['sizeAfterPurge'] = MetricsFormatter::getPrettySizeFromBytes($totalAfterPurge);
-            $result['spaceSaved'] = MetricsFormatter::getPrettySizeFromBytes($totalBytes - $totalAfterPurge);
+            $result['sizeAfterPurge'] = $formatter->getPrettySizeFromBytes($totalAfterPurge);
+            $result['spaceSaved'] = $formatter->getPrettySizeFromBytes($totalBytes - $totalAfterPurge);
         }
 
         return $result;
@@ -248,12 +251,14 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
     {
         Piwik::checkUserHasSuperUserAccess();
         $deleteDataInfos = array();
-        $taskScheduler = new TaskScheduler();
         $deleteDataInfos["config"] = PrivacyManager::getPurgeDataSettings();
         $deleteDataInfos["deleteTables"] =
             "<br/>" . implode(", ", LogDataPurger::getDeleteTableLogTables());
 
-        $scheduleTimetable = $taskScheduler->getScheduledTimeForMethod("PrivacyManager", "deleteLogTables");
+        /** @var Scheduler $scheduler */
+        $scheduler = StaticContainer::getContainer()->get('Piwik\Scheduler\Scheduler');
+
+        $scheduleTimetable = $scheduler->getScheduledTimeForMethod("PrivacyManager", "deleteLogTables");
 
         $optionTable = Option::get(self::OPTION_LAST_DELETE_PIWIK_LOGS);
 
@@ -287,7 +292,9 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
             }
         }
 
-        $deleteDataInfos["nextRunPretty"] = MetricsFormatter::getPrettyTimeFromSeconds($deleteDataInfos["nextScheduleTime"] - time());
+        $formatter = new Formatter();
+
+        $deleteDataInfos["nextRunPretty"] = $formatter->getPrettyTimeFromSeconds($deleteDataInfos["nextScheduleTime"] - time());
 
         return $deleteDataInfos;
     }
@@ -297,7 +304,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         Piwik::checkUserHasSuperUserAccess();
         Nonce::checkNonce(self::DEACTIVATE_DNT_NONCE);
 
-        DoNotTrackHeaderChecker::deactivate();
+        $dntChecker = new DoNotTrackHeaderChecker();
+        $dntChecker->deactivate();
 
         $this->redirectToIndex('PrivacyManager', 'privacySettings');
     }
@@ -307,7 +315,8 @@ class Controller extends \Piwik\Plugin\ControllerAdmin
         Piwik::checkUserHasSuperUserAccess();
         Nonce::checkNonce(self::ACTIVATE_DNT_NONCE);
 
-        DoNotTrackHeaderChecker::activate();
+        $dntChecker = new DoNotTrackHeaderChecker();
+        $dntChecker->activate();
 
         $this->redirectToIndex('PrivacyManager', 'privacySettings');
     }

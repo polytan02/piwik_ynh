@@ -22,30 +22,33 @@ abstract class DeviceParserAbstract extends ParserAbstract
     protected $model = null;
     protected $brand = null;
 
-    const DEVICE_TYPE_DESKTOP       = 0;
-    const DEVICE_TYPE_SMARTPHONE    = 1;
-    const DEVICE_TYPE_TABLET        = 2;
-    const DEVICE_TYPE_FEATURE_PHONE = 3;
-    const DEVICE_TYPE_CONSOLE       = 4;
-    const DEVICE_TYPE_TV            = 5;
-    const DEVICE_TYPE_CAR_BROWSER   = 6;
-    const DEVICE_TYPE_SMART_DISPLAY = 7;
-    const DEVICE_TYPE_CAMERA        = 8;
+    const DEVICE_TYPE_DESKTOP              = 0;
+    const DEVICE_TYPE_SMARTPHONE           = 1;
+    const DEVICE_TYPE_TABLET               = 2;
+    const DEVICE_TYPE_FEATURE_PHONE        = 3;
+    const DEVICE_TYPE_CONSOLE              = 4;
+    const DEVICE_TYPE_TV                   = 5;
+    const DEVICE_TYPE_CAR_BROWSER          = 6;
+    const DEVICE_TYPE_SMART_DISPLAY        = 7;
+    const DEVICE_TYPE_CAMERA               = 8;
+    const DEVICE_TYPE_PORTABLE_MEDIA_PAYER = 9;
 
     /**
      * Detectable device types
+     *
      * @var array
      */
     protected static $deviceTypes = array(
-        'desktop'       => self::DEVICE_TYPE_DESKTOP,
-        'smartphone'    => self::DEVICE_TYPE_SMARTPHONE,
-        'tablet'        => self::DEVICE_TYPE_TABLET,
-        'feature phone' => self::DEVICE_TYPE_FEATURE_PHONE,
-        'console'       => self::DEVICE_TYPE_CONSOLE,
-        'tv'            => self::DEVICE_TYPE_TV,
-        'car browser'   => self::DEVICE_TYPE_CAR_BROWSER,
-        'smart display' => self::DEVICE_TYPE_SMART_DISPLAY,
-        'camera'        => self::DEVICE_TYPE_CAMERA
+        'desktop'               => self::DEVICE_TYPE_DESKTOP,
+        'smartphone'            => self::DEVICE_TYPE_SMARTPHONE,
+        'tablet'                => self::DEVICE_TYPE_TABLET,
+        'feature phone'         => self::DEVICE_TYPE_FEATURE_PHONE,
+        'console'               => self::DEVICE_TYPE_CONSOLE,
+        'tv'                    => self::DEVICE_TYPE_TV,
+        'car browser'           => self::DEVICE_TYPE_CAR_BROWSER,
+        'smart display'         => self::DEVICE_TYPE_SMART_DISPLAY,
+        'camera'                => self::DEVICE_TYPE_CAMERA,
+        'portable media player' => self::DEVICE_TYPE_PORTABLE_MEDIA_PAYER
     );
 
     /**
@@ -66,6 +69,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'AU' => 'Asus',
         'AV' => 'Avvio',
         'AX' => 'Audiovox',
+        'AY' => 'Axxion',
         'BB' => 'BBK',
         'BE' => 'Becker',
         'BI' => 'Bird',
@@ -87,7 +91,9 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'CM' => 'Crius Mea',
         'CR' => 'CreNova',
         'CT' => 'Capitel',
+        'CQ' => 'Compaq',
         'CO' => 'Coolpad',
+        'CW' => 'Cowon',
         'CU' => 'Cube',
         'CY' => 'Coby Kyros',
         'DA' => 'Danew',
@@ -108,9 +114,12 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'EV' => 'Evertek',
         'EZ' => 'Ezze',
         'FL' => 'Fly',
+        'FU' => 'Fujitsu',
+        'GA' => 'Gateway',
         'GD' => 'Gemini',
         'GI' => 'Gionee',
         'GG' => 'Gigabyte',
+        'GS' => 'Gigaset',
         'GO' => 'Google',
         'GR' => 'Gradiente',
         'GU' => 'Grundig',
@@ -119,6 +128,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'HT' => 'HTC',
         'HU' => 'Huawei',
         'HX' => 'Humax',
+        'HY' => 'Hyrican',
         'IA' => 'Ikea',
         'IB' => 'iBall',
         'IY' => 'iBerry',
@@ -132,6 +142,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'IQ' => 'INQ',
         'IT' => 'Intek',
         'IV' => 'Inverto',
+        'IZ' => 'iTel',
         'JI' => 'Jiayu',
         'JO' => 'Jolla',
         'KA' => 'Karbonn',
@@ -150,18 +161,19 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'LG' => 'LG',
         'LO' => 'Loewe',
         'LM' => 'Logicom',
-        'LU' => 'LGUPlus',
         'LX' => 'Lexibook',
         'MA' => 'Manta Multimedia',
         'MB' => 'Mobistel',
         'MD' => 'Medion',
         'ME' => 'Metz',
+        'MX' => 'MEU',
         'MI' => 'MicroMax',
         'MK' => 'MediaTek',
         'MO' => 'Mio',
         'MM' => 'Mpman',
         'MR' => 'Motorola',
         'MS' => 'Microsoft',
+        'MZ' => 'MSI',
         'MU' => 'Memup',
         'MT' => 'Mitsubishi',
         'MY' => 'MyPhone',
@@ -186,6 +198,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'PO' => 'phoneOne',
         'PT' => 'Pantech',
         'PP' => 'PolyPad',
+        'PS' => 'Positivo',
         'PR' => 'Prestigio',
         'QI' => 'Qilive',
         'QT' => 'Qtek',
@@ -198,6 +211,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'SD' => 'Sega',
         'SE' => 'Sony Ericsson',
         'SF' => 'Softbank',
+        'SX' => 'SFR',
         'SG' => 'Sagem',
         'SH' => 'Sharp',
         'SI' => 'Siemens',
@@ -224,6 +238,7 @@ abstract class DeviceParserAbstract extends ParserAbstract
         'TO' => 'Toplux',
         'TS' => 'Toshiba',
         'TT' => 'TechnoTrend',
+        'TU' => 'Tunisie Telecom',
         'TV' => 'TVC',
         'TX' => 'TechniSat',
         'TZ' => 'teXet',

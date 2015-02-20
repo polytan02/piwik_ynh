@@ -37,6 +37,9 @@
 
     span.truncated-text-line {
         display:inline-block;
+        &.event {
+          max-width: 89%;
+        }
     }
 }
 
@@ -64,6 +67,7 @@
 }
 
 .visitor-profile-close {
+    z-index: 10;
     position:absolute;
     right:-17px;
     top:-16px;

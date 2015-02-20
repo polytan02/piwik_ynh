@@ -177,7 +177,7 @@ class Process
             return false;
         }
 
-        if (static::commandExists('ps') && self::returnsSuccessCode('ps') && self::commandExists('awk')) {
+        if (self::commandExists('ps') && self::returnsSuccessCode('ps') && self::commandExists('awk')) {
             return true;
         }
 
@@ -216,7 +216,7 @@ class Process
 
     private static function commandExists($command)
     {
-        $result = shell_exec('which ' . escapeshellarg($command) . ' 2> /dev/null');
+        $result = @shell_exec('which ' . escapeshellarg($command) . ' 2> /dev/null');
 
         return !empty($result);
     }

@@ -9,7 +9,6 @@
         "ColumnSocial": "Sociala nätverk",
         "ColumnWebsite": "Webbplats",
         "ColumnWebsitePage": "Webbplatsens sida",
-        "DetailsByReferrerType": "Detaljer för den refererande typen",
         "DirectEntry": "Direkttrafik",
         "DirectEntryDocumentation": "En besökare har skrivit in webbadressen i sin webbläsare och började surfa på din webbplats - han gick in på hemsidan direkt.",
         "Distinct": "Distinkta hänvisningar av den refererande typen",
@@ -48,7 +47,6 @@
         "WebsitesReportDocumentation": "I denna tabell kan du se vilka webbplatser som hänvisade besökare till din webbplats. %s Genom att klicka på en rad i tabellen så kan du se vilka webbadresser som länkarna till din webbplats var på.",
         "WidgetExternalWebsites": "Lista på externa webbsidor",
         "WidgetGetAll": "Alla hänvisningar",
-        "WidgetKeywords": "Lista över sökord",
         "WidgetSocials": "Lista över sociala nätverk",
         "WidgetTopKeywordsForPages": "Toppsökord för sid-URL",
         "XPercentOfVisits": "%s%% av besökare"

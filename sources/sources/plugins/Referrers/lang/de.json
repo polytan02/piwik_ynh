@@ -9,7 +9,6 @@
         "ColumnSocial": "Soziales Netzwerk",
         "ColumnWebsite": "Webseite",
         "ColumnWebsitePage": "Webseiten-Seite",
-        "DetailsByReferrerType": "Details nach Verweisart",
         "DirectEntry": "Direkte Zugriffe",
         "DirectEntryDocumentation": "Ein Besucher kam auf die Webseite, indem er die URL direkt in den Browser eingegeben hat.",
         "Distinct": "Unterschiedliche Verweise nach Verweisart",
@@ -26,6 +25,7 @@
         "ReferrerName": "Name des Verweises",
         "Referrers": "Verweise",
         "ReferrersOverview": "Übersicht Verweise",
+        "ReferrerTypes": "Verweistypen",
         "SearchEngines": "Suchmaschinen",
         "SearchEnginesDocumentation": "Ein Besucher kam durch eine Suchmaschine auf die Webseite. %s Der %s Bericht enthält weitere Details.",
         "SearchEnginesReportDocumentation": "Dieser Bericht zeigt Ihnen, welche Suchmaschinen Besucher auf die Webseite geführt haben. %s Wenn Sie auf eine Zeile der Tabelle klicken, werden die Suchbegriffe angezeigt, nach denen die Besucher gesucht haben.",
@@ -48,7 +48,6 @@
         "WebsitesReportDocumentation": "In dieser Tabelle sehen Sie, von welchen Webseiten aus Besucher auf Ihre Seite verwiesen wurden. %s Wenn Sie auf eine Zeile der Tabelle klicken, sehen Sie, auf welchen URLs sich die Links zu Ihrer Webseite befanden.",
         "WidgetExternalWebsites": "Liste externer Webseiten",
         "WidgetGetAll": "Alle Verweise",
-        "WidgetKeywords": "Liste der Suchbegriffe",
         "WidgetSocials": "Liste Sozialer Netzwerke",
         "WidgetTopKeywordsForPages": "Top-Schlüsselworte für Seiten-URL",
         "XPercentOfVisits": "%s%% aller Besuche"

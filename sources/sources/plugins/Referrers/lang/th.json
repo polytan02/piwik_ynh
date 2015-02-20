@@ -5,7 +5,6 @@
         "ColumnSearchEngine": "เครื่องมือค้นหา",
         "ColumnWebsite": "เว็บไซต์",
         "ColumnWebsitePage": "หน้าเว็บไซต์",
-        "DetailsByReferrerType": "รายละเอียดตามชนิดแหล่งที่มา",
         "DirectEntry": "เข้าชมโดยตรง",
         "Distinct": "แหล่งที่มาแตกต่างกันตามชนิดของทำการอ้างอิง",
         "DistinctCampaigns": "แคมเปญการขายที่แตกต่างกัน",
@@ -26,7 +25,6 @@
         "UsingNDistinctUrls": "(โดยใช้ %s ไม่ซ้ำ urls)",
         "Websites": "เว็บไซต์",
         "WidgetExternalWebsites": "รายการเว็บไซต์ภายนอก",
-        "WidgetKeywords": "รายการคีย์เวิร์ด",
         "WidgetSocials": "รายชื่อเว็บไซต์เครือข่ายสังคมออนไลน์"
     }
 }

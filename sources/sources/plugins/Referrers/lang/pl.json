@@ -5,7 +5,6 @@
         "ColumnSearchEngine": "Wyszukiwarka",
         "ColumnWebsite": "Strona",
         "ColumnWebsitePage": "Pojedyncza strona",
-        "DetailsByReferrerType": "Szczegóły według typu odsyłaczy",
         "DirectEntry": "wejścia bezpośrednie",
         "Distinct": "Wyróżnione odsyłacze według ich typu",
         "DistinctCampaigns": "wyróżnione kampanie",
@@ -26,7 +25,6 @@
         "TypeWebsites": "%s ze stron",
         "UsingNDistinctUrls": "(używając %s wyróżnionych adresów url)",
         "Websites": "Strony",
-        "WidgetExternalWebsites": "Lista zewnętrznych serwisów internetowych",
-        "WidgetKeywords": "Lista słów kluczowych"
+        "WidgetExternalWebsites": "Lista zewnętrznych serwisów internetowych"
     }
 }

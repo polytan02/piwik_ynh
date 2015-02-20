@@ -5,7 +5,6 @@
         "ColumnSearchEngine": "搜尋引擎",
         "ColumnWebsite": "網站",
         "ColumnWebsitePage": "網站頁面",
-        "DetailsByReferrerType": "推薦連結網站類型詳細資料",
         "DirectEntry": "直接流量",
         "Distinct": "推薦連結網站類型的不同參照項目",
         "DistinctCampaigns": "不同的廣告活動",
@@ -26,7 +25,6 @@
         "UsingNDistinctUrls": "(使用 %s 不同的網址)",
         "Websites": "網站",
         "WidgetExternalWebsites": "外部網站清單",
-        "WidgetKeywords": "關鍵字清單",
         "WidgetSocials": "社交網站清單"
     }
 }

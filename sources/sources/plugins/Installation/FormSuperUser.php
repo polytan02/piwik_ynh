@@ -61,7 +61,7 @@ class FormSuperUser extends QuickForm2
         $this->addElement('checkbox', 'subscribe_newsletter_piwikpro', null,
             array(
                 'content' => '&nbsp;&nbsp;' . Piwik::translate('Installation_PiwikProNewsletter',
-                        array("<a href='http://piwik.pro' style='color:#444;' target='_blank'>", "</a>")
+                        array("<a href='http://piwik.pro' style='color:#444;' rel='noreferrer' target='_blank'>", "</a>")
                     ),
             ));
 
@@ -70,7 +70,7 @@ class FormSuperUser extends QuickForm2
         // default values
         $this->addDataSource(new HTML_QuickForm2_DataSource_Array(array(
             'subscribe_newsletter_piwikorg' => 1,
-            'subscribe_newsletter_piwikpro' => 0,
+            'subscribe_newsletter_piwikpro' => 1,
         )));
     }
 }

@@ -7,8 +7,9 @@
  */
 namespace DeviceDetector\Parser;
 
-use DeviceDetector\Cache\CacheInterface;
-use DeviceDetector\Cache\CacheStatic;
+use DeviceDetector\Cache\StaticCache;
+use DeviceDetector\DeviceDetector;
+use DeviceDetector\Cache\Cache;
 use \Spyc;
 
 /**
@@ -86,7 +87,7 @@ abstract class ParserAbstract
     const VERSION_TRUNCATION_NONE  = null;
 
     /**
-     * @var CacheInterface
+     * @var Cache|\Doctrine\Common\Cache\Cache
      */
     protected $cache;
 
@@ -140,12 +141,12 @@ abstract class ParserAbstract
     protected function getRegexes()
     {
         if (empty($this->regexList)) {
-            $cacheKey = 'DeviceDetector-regexes-'.$this->getName();
+            $cacheKey = 'DeviceDetector-'.DeviceDetector::VERSION.'regexes-'.$this->getName();
             $cacheKey = preg_replace('/([^a-z0-9_-]+)/i', '', $cacheKey);
-            $this->regexList = $this->getCache()->get($cacheKey);
+            $this->regexList = $this->getCache()->fetch($cacheKey);
             if (empty($this->regexList)) {
                 $this->regexList = Spyc::YAMLLoad(dirname(__DIR__).DIRECTORY_SEPARATOR.$this->fixtureFile);
-                $this->getCache()->set($cacheKey, $this->regexList);
+                $this->getCache()->save($cacheKey, $this->regexList);
             }
         }
         return $this->regexList;
@@ -227,11 +228,11 @@ abstract class ParserAbstract
 
         static $overAllMatch;
 
-        $cacheKey = $this->parserName.'-all';
+        $cacheKey = $this->parserName.DeviceDetector::VERSION.'-all';
         $cacheKey = preg_replace('/([^a-z0-9_-]+)/i', '', $cacheKey);
 
         if (empty($overAllMatch)) {
-            $overAllMatch = $this->getCache()->get($cacheKey);
+            $overAllMatch = $this->getCache()->fetch($cacheKey);
         }
 
         if (empty($overAllMatch)) {
@@ -243,7 +244,7 @@ abstract class ParserAbstract
                     return $val2['regex'];
                 }
             });
-            $this->getCache()->set($cacheKey, $overAllMatch);
+            $this->getCache()->save($cacheKey, $overAllMatch);
         }
 
         return $this->matchUserAgent($overAllMatch);
@@ -252,19 +253,24 @@ abstract class ParserAbstract
     /**
      * Sets the Cache class
      *
-     * Note: The given class needs to have a 'get' and 'set' method to be used
-     *
-     * @param $cache
+     * @param Cache|\Doctrine\Common\Cache\CacheProvider $cache
+     * @throws \Exception
      */
-    public function setCache(CacheInterface $cache)
+    public function setCache($cache)
     {
-        $this->cache = $cache;
+        if ($cache instanceof Cache ||
+            (class_exists('\Doctrine\Common\Cache\CacheProvider') && $cache instanceof \Doctrine\Common\Cache\CacheProvider)) {
+            $this->cache = $cache;
+            return;
+        }
+
+        throw new \Exception('Cache not supported');
     }
 
     /**
      * Returns Cache object
      *
-     * @return CacheInterface
+     * @return Cache|\Doctrine\Common\Cache\CacheProvider
      */
     public function getCache()
     {
@@ -272,6 +278,6 @@ abstract class ParserAbstract
             return $this->cache;
         }
 
-        return new CacheStatic();
+        return new StaticCache();
     }
 }

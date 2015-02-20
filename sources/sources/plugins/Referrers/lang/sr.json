@@ -9,7 +9,6 @@
         "ColumnSocial": "Društvena mreža",
         "ColumnWebsite": "Sajt",
         "ColumnWebsitePage": "Stranica sajta",
-        "DetailsByReferrerType": "Detalji u vezi sa referencom",
         "DirectEntry": "Direktni ulasci",
         "DirectEntryDocumentation": "Korisnik je ukucao adresu u svoj brauzer i došao na vaš sajt - ušao je direktno na vaš sajt.",
         "Distinct": "Različite reference po tipu",
@@ -48,7 +47,6 @@
         "WebsitesReportDocumentation": "U ovoj tabeli možete da vidite koji sajtovi su upućivali korisnike na vaš sajt. %s Klikom na red tabele možete videti koja adresa je povezana sa vašim sajtom.",
         "WidgetExternalWebsites": "Lista eksternih sajtova",
         "WidgetGetAll": "Sve reference",
-        "WidgetKeywords": "Lista ključnih reči",
         "WidgetSocials": "Spisak društvenih mreža",
         "WidgetTopKeywordsForPages": "Najbolje ključne reči za URL",
         "XPercentOfVisits": "%s%% poseta"

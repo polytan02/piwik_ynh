@@ -9,7 +9,9 @@
 namespace Piwik;
 
 use Exception;
+use Piwik\Container\StaticContainer;
 use Piwik\DataTable\Filter\SafeDecodeLabel;
+use Piwik\Metrics\Formatter;
 use Piwik\Translate;
 use Piwik\View\RenderTokenParser;
 use Piwik\Visualization\Sparkline;
@@ -19,6 +21,7 @@ use Twig_Loader_Chain;
 use Twig_Loader_Filesystem;
 use Twig_SimpleFilter;
 use Twig_SimpleFunction;
+use Twig_SimpleTest;
 
 /**
  * Twig class
@@ -34,6 +37,8 @@ class Twig
      */
     private $twig;
 
+    private $formatter;
+
     public function __construct()
     {
         $loader = $this->getDefaultThemeLoader();
@@ -43,6 +48,8 @@ class Twig
 		$manager = Plugin\Manager::getInstance();
 		$theme   = $manager->getThemeEnabled();
 		$loaders = array();
+
+        $this->formatter = new Formatter();
 
 		//create loader for custom theme to overwrite twig templates
 		if ($theme && $theme->getPluginName() != \Piwik\Plugin\Manager::DEFAULT_THEME) {
@@ -59,8 +66,7 @@ class Twig
         $chainLoader = new Twig_Loader_Chain($loaders);
 
         // Create new Twig Environment and set cache dir
-        $templatesCompiledPath = PIWIK_USER_PATH . '/tmp/templates_c';
-        $templatesCompiledPath = SettingsPiwik::rewriteTmpPathWithInstanceId($templatesCompiledPath);
+        $templatesCompiledPath = StaticContainer::get('path.tmp') . '/templates_c';
 
         $this->twig = new Twig_Environment($chainLoader,
             array(
@@ -92,6 +98,19 @@ class Twig
         $this->addFunction_getJavascriptTranslations();
 
         $this->twig->addTokenParser(new RenderTokenParser());
+
+        $this->addTest_false();
+    }
+
+    private function addTest_false()
+    {
+        $test = new Twig_SimpleTest(
+            'false',
+            function ($value) {
+                return false === $value;
+            }
+        );
+        $this->twig->addTest($test);
     }
 
     protected function addFunction_getJavascriptTranslations()
@@ -272,21 +291,23 @@ class Twig
 
     protected function addFilter_money()
     {
-        $moneyFilter = new Twig_SimpleFilter('money', function ($amount) {
+        $formatter = $this->formatter;
+        $moneyFilter = new Twig_SimpleFilter('money', function ($amount) use ($formatter) {
             if (func_num_args() != 2) {
                 throw new Exception('the money modifier expects one parameter: the idSite.');
             }
             $idSite = func_get_args();
             $idSite = $idSite[1];
-            return MetricsFormatter::getPrettyMoney($amount, $idSite);
+            return $formatter->getPrettyMoney($amount, $idSite);
         });
         $this->twig->addFilter($moneyFilter);
     }
 
     protected function addFilter_sumTime()
     {
-        $sumtimeFilter = new Twig_SimpleFilter('sumtime', function ($numberOfSeconds) {
-            return MetricsFormatter::getPrettyTimeFromSeconds($numberOfSeconds);
+        $formatter = $this->formatter;
+        $sumtimeFilter = new Twig_SimpleFilter('sumtime', function ($numberOfSeconds) use ($formatter) {
+            return $formatter->getPrettyTimeFromSeconds($numberOfSeconds, true);
         });
         $this->twig->addFilter($sumtimeFilter);
     }

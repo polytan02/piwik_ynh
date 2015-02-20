@@ -8,25 +8,32 @@
  */
 namespace Piwik\Plugins\VisitsSummary\Reports;
 
+use Piwik\DataTable\DataTableInterface;
 use Piwik\Piwik;
+use Piwik\Plugins\CoreHome\Columns\Metrics\ActionsPerVisit;
+use Piwik\Plugins\CoreHome\Columns\Metrics\AverageTimeOnSite;
+use Piwik\Plugins\CoreHome\Columns\Metrics\BounceRate;
 
 class Get extends \Piwik\Plugin\Report
 {
+    private $usersColumn = 'nb_users';
+
     protected function init()
     {
         parent::init();
         $this->category      = 'VisitsSummary_VisitsSummary';
         $this->name          = Piwik::translate('VisitsSummary_VisitsSummary');
         $this->documentation = ''; // TODO
-        $this->processedMetrics = false;
+        $this->processedMetrics = array(
+            new BounceRate(),
+            new ActionsPerVisit(),
+            new AverageTimeOnSite()
+        );
         $this->metrics       = array(
             'nb_uniq_visitors',
             'nb_visits',
-            'nb_users',
+            $this->usersColumn,
             'nb_actions',
-            'nb_actions_per_visit',
-            'bounce_rate',
-            'avg_time_on_site',
             'max_actions'
         );
         // Used to process metrics, not displayed/used directly
@@ -39,9 +46,38 @@ class Get extends \Piwik\Plugin\Report
     {
         $metrics = parent::getMetrics();
 
-        $metrics['avg_time_on_site'] = Piwik::translate('General_VisitDuration');
-        $metrics['max_actions']      = Piwik::translate('General_ColumnMaxActions');
+        $metrics['max_actions'] = Piwik::translate('General_ColumnMaxActions');
 
         return $metrics;
     }
+
+    public function getProcessedMetrics()
+    {
+        $metrics = parent::getProcessedMetrics();
+
+        $metrics['avg_time_on_site'] = Piwik::translate('General_VisitDuration');
+
+        return $metrics;
+    }
+
+    public function removeUsersFromProcessedReport(&$response)
+    {
+        if (!empty($response['metadata']['metrics'][$this->usersColumn])) {
+            unset($response['metadata']['metrics'][$this->usersColumn]);
+        }
+
+        if (!empty($response['metadata']['metricsDocumentation'][$this->usersColumn])) {
+            unset($response['metadata']['metricsDocumentation'][$this->usersColumn]);
+        }
+
+        if (!empty($response['columns'][$this->usersColumn])) {
+            unset($response['columns'][$this->usersColumn]);
+        }
+
+        if (!empty($response['reportData'])) {
+            $dataTable = $response['reportData'];
+            $dataTable->deleteColumn($this->usersColumn, true);
+        }
+    }
+
 }
