@@ -1,7 +1,0 @@
-{
-    "Provider": {
-        "ColumnProvider": "Internetszolgáltató",
-        "PluginDescription": "Jelentések a látogatók internetszolgáltatóról",
-        "WidgetProviders": "Internetszolgáltatók"
-    }
-}
