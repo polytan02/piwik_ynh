@@ -21,11 +21,11 @@ use Piwik\Piwik;
 /**
  * The Referrers API lets you access reports about Websites, Search engines, Keywords, Campaigns used to access your website.
  *
- * For example, "getKeywords" returns all search engine keywords (with <a href='http://piwik.org/docs/analytics-api/reference/#toc-metric-definitions' target='_blank'>general analytics metrics</a> for each keyword), "getWebsites" returns referrer websites (along with the full Referrer URL if the parameter &expanded=1 is set).
+ * For example, "getKeywords" returns all search engine keywords (with <a href='http://piwik.org/docs/analytics-api/reference/#toc-metric-definitions' rel='noreferrer' target='_blank'>general analytics metrics</a> for each keyword), "getWebsites" returns referrer websites (along with the full Referrer URL if the parameter &expanded=1 is set).
  * "getReferrerType" returns the Referrer overview report. "getCampaigns" returns the list of all campaigns (and all campaign keywords if the parameter &expanded=1 is set).
  *
  * The methods "getKeywordsForPageUrl" and "getKeywordsForPageTitle" are used to output the top keywords used to find a page.
- * Check out the widget <a href='http://demo.piwik.org/index.php?module=Widgetize&action=iframe&moduleToWidgetize=Referrers&actionToWidgetize=getKeywordsForPage&idSite=7&period=day&date=2011-02-15&disableLink=1' target='_blank'>"Top keywords used to find this page"</a> that you can easily re-use on your website.
+ * Check out the widget <a href='http://demo.piwik.org/index.php?module=Widgetize&action=iframe&moduleToWidgetize=Referrers&actionToWidgetize=getKeywordsForPage&idSite=7&period=day&date=2011-02-15&disableLink=1' rel='noreferrer' target='_blank'>"Top keywords used to find this page"</a> that you can easily re-use on your website.
  * @method static \Piwik\Plugins\Referrers\API getInstance()
  */
 class API extends \Piwik\Plugin\API
@@ -68,8 +68,8 @@ class API extends \Piwik\Plugin\API
      * @param bool $expanded Whether to get report w/ subtables loaded or not.
      * @return DataTable
      */
-    public function  getReferrerType($idSite, $period, $date, $segment = false, $typeReferrer = false,
-                                     $idSubtable = false, $expanded = false)
+    public function getReferrerType($idSite, $period, $date, $segment = false, $typeReferrer = false,
+                                    $idSubtable = false, $expanded = false)
     {
         // if idSubtable is supplied, interpret idSubtable as referrer type and return correct report
         if ($idSubtable !== false) {
@@ -89,6 +89,9 @@ class API extends \Piwik\Plugin\API
             }
 
             if ($result) {
+                $result->filter('ColumnCallbackDeleteMetadata', array('segment'));
+                $result->filter('ColumnCallbackDeleteMetadata', array('segmentValue'));
+
                 return $this->removeSubtableIds($result); // this report won't return subtables of individual reports
             }
         }
@@ -106,6 +109,8 @@ class API extends \Piwik\Plugin\API
         if (!($dataTable instanceof DataTable\Map)) {
             $this->setGetReferrerTypeSubtables($dataTable, $idSite, $period, $date, $segment, $expanded);
         }
+
+        $manager = DataTable\Manager::getInstance();
 
         // set referrer type column to readable value
         $dataTable->queueFilter('ColumnCallbackReplace', array('label', __NAMESPACE__ . '\getReferrerTypeLabel'));
@@ -125,7 +130,6 @@ class API extends \Piwik\Plugin\API
         }
 
         $dataTable = $dataTable->mergeSubtables($labelColumn = 'referer_type', $useMetadataColumn = true);
-
         $dataTable->filter('Sort', array(Metrics::INDEX_NB_VISITS, 'desc'));
         $dataTable->queueFilter('ReplaceColumnNames');
         $dataTable->queueFilter('ReplaceSummaryRowLabel');
@@ -136,6 +140,9 @@ class API extends \Piwik\Plugin\API
     public function getKeywords($idSite, $period, $date, $segment = false, $expanded = false)
     {
         $dataTable = $this->getDataTable(Archiver::KEYWORDS_RECORD_NAME, $idSite, $period, $date, $segment, $expanded);
+        $dataTable->filter('AddSegmentValue');
+        $dataTable->queueFilter('PrependSegment', array('referrerType==search;'));
+
         $dataTable = $this->handleKeywordNotDefined($dataTable);
         return $dataTable;
     }
@@ -234,6 +241,9 @@ class API extends \Piwik\Plugin\API
     public function getSearchEngines($idSite, $period, $date, $segment = false, $expanded = false)
     {
         $dataTable = $this->getDataTable(Archiver::SEARCH_ENGINES_RECORD_NAME, $idSite, $period, $date, $segment, $expanded);
+
+        $dataTable->filter('AddSegmentByLabel', array('referrerName'));
+        $dataTable->queueFilter('PrependSegment', array('referrerType==search;'));
         $dataTable->queueFilter('ColumnCallbackAddMetadata', array('label', 'url', __NAMESPACE__ . '\getSearchEngineUrlFromName'));
         $dataTable->queueFilter('MetadataCallbackAddMetadata', array('url', 'logo', __NAMESPACE__ . '\getSearchEngineLogoFromUrl'));
         return $dataTable;
@@ -273,6 +283,10 @@ class API extends \Piwik\Plugin\API
     public function getCampaigns($idSite, $period, $date, $segment = false, $expanded = false)
     {
         $dataTable = $this->getDataTable(Archiver::CAMPAIGNS_RECORD_NAME, $idSite, $period, $date, $segment, $expanded);
+
+        $dataTable->filter('AddSegmentByLabel', array('referrerName'));
+        $dataTable->queueFilter('PrependSegment', array('referrerType==campaign;'));
+
         return $dataTable;
     }
 
@@ -285,6 +299,7 @@ class API extends \Piwik\Plugin\API
     public function getWebsites($idSite, $period, $date, $segment = false, $expanded = false)
     {
         $dataTable = $this->getDataTable(Archiver::WEBSITES_RECORD_NAME, $idSite, $period, $date, $segment, $expanded);
+        $dataTable->filter('AddSegmentByLabel', array('referrerName'));
         return $dataTable;
     }
 
@@ -314,9 +329,7 @@ class API extends \Piwik\Plugin\API
     public function getSocials($idSite, $period, $date, $segment = false, $expanded = false)
     {
         $dataTable = $this->getDataTable(Archiver::WEBSITES_RECORD_NAME, $idSite, $period, $date, $segment, $expanded);
-
         $dataTable->filter('ColumnCallbackDeleteRow', array('label', function ($url) { return !isSocialUrl($url); }));
-
         $dataTable->filter('ColumnCallbackAddMetadata', array('label', 'url', __NAMESPACE__ . '\getSocialMainUrl'));
         $dataTable->filter('GroupBy', array('label', __NAMESPACE__ . '\getSocialNetworkFromDomain'));
 

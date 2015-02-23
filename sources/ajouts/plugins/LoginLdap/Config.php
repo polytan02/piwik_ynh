@@ -25,7 +25,9 @@ class Config
         'enable_random_token_auth_generation' => 0,
         'new_user_default_sites_view_access' => '',
         'user_email_suffix' => '',
+        'append_user_email_suffix_to_username' => 1,
         'required_member_of' => '',
+        'required_member_of_field' => 'memberOf',
         'ldap_user_filter' => '',
         'ldap_user_id_field' => 'uid',
         'ldap_last_name_field' => 'sn',
@@ -106,6 +108,11 @@ class Config
     public static function getRequiredMemberOf()
     {
         return self::getConfigOption('required_member_of');
+    }
+
+    public static function getRequiredMemberOfField()
+    {
+        return self::getConfigOption('required_member_of_field');
     }
 
     public static function getLdapUserFilter()
@@ -196,6 +203,11 @@ class Config
     public static function getLdapNetworkTimeout()
     {
         return self::getConfigOption('ldap_network_timeout');
+    }
+
+    public static function shouldAppendUserEmailSuffixToUsername()
+    {
+        return self::getConfigOption('append_user_email_suffix_to_username') == 1;
     }
 
     public static function getServerConfig($server)

@@ -15,7 +15,7 @@ use Piwik\Common;
 use Piwik\Plugins\UsersManager\API as UsersManagerAPI;
 use Piwik\Plugins\LoginLdap\Auth\LdapAuth;
 use Piwik\SettingsPiwik;
-use Piwik\Tests\Fixture;
+use Piwik\Tests\Framework\Fixture;
 
 /**
  * @group LoginLdap
@@ -221,6 +221,21 @@ class LdapUserSynchronizationTest extends LdapIntegrationTest
         $userAgain = $this->getUser(self::TEST_LOGIN);
 
         $this->assertEquals($user['password'], $userAgain['password']);
+    }
+
+    public function test_CorrectExistingUserUpdated_WhenUserEmailSuffixUsed()
+    {
+        Config::getInstance()->LoginLdap['user_email_suffix'] = '@xmansion.org';
+
+        // authenticate via ldap to add the user w/ the email suffix
+        $this->authenticateViaLdap($login = 'rogue', $pass = 'cher');
+
+        $user = $this->getUser('rogue@xmansion.org');
+
+        $this->assertNotEmpty($user);
+
+        // authenticate again to make sure the correct user is updated and we didn't try to add again
+        $this->authenticateViaLdap($login = 'rogue', $pass = 'cher');
     }
 
     private function assertNoAccessInDb()

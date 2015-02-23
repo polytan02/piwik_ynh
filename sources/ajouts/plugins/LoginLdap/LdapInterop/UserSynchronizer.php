@@ -71,7 +71,7 @@ class UserSynchronizer
 
     /**
      * UserModel instance used to access user data. We don't go through the API in
-   * order to avoid thrown exceptions.
+     * order to avoid thrown exceptions.
      *
      * @var UserModel
      */
@@ -101,9 +101,13 @@ class UserSynchronizer
         $userModel = $this->userModel;
         $newUserDefaultSitesWithViewAccess = $this->newUserDefaultSitesWithViewAccess;
         return Access::doAsSuperUser(function () use ($piwikLogin, $ldapUser, $userMapper, $usersManagerApi, $userModel, $newUserDefaultSitesWithViewAccess) {
+            $piwikLogin = $userMapper->getExpectedLdapUsername($piwikLogin);
+
             $existingUser = $userModel->getUser($piwikLogin);
 
             $user = $userMapper->createPiwikUserFromLdapUser($ldapUser, $existingUser);
+
+            Log::debug("UserSynchronizer::synchronizeLdapUser: synchronizing user [ piwik login = %s, ldap login = %s ]", $piwikLogin, $user['login']);
 
             if (empty($existingUser)) {
                 $usersManagerApi->addUser($user['login'], $user['password'], $user['email'], $user['alias'], $isPasswordHashed = true);
@@ -273,9 +277,9 @@ class UserSynchronizer
         if (Config::isAccessSynchronizationEnabled()) {
             $result->setUserAccessMapper(UserAccessMapper::makeConfigured());
 
-            Log::info("UserSynchronizer::%s(): Using UserAccessMapper when synchronizing users.", __FUNCTION__);
+            Log::debug("UserSynchronizer::%s(): Using UserAccessMapper when synchronizing users.", __FUNCTION__);
         } else {
-            Log::info("UserSynchronizer::%s(): LDAP access synchronization not enabled.", __FUNCTION__);
+            Log::debug("UserSynchronizer::%s(): LDAP access synchronization not enabled.", __FUNCTION__);
         }
 
         $defaultSitesWithViewAccess = Config::getDefaultSitesToGiveViewAccessTo();

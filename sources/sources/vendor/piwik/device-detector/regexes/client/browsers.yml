@@ -5,6 +5,14 @@
 # @license http://www.gnu.org/licenses/lgpl.html LGPL v3 or later
 ###############
 
+#newer versions of IE
+- regex: 'Edge[ /](\d+[\.\d]+)'
+  name: 'Internet Explorer'
+  version: '$1'
+  engine:
+    default: 'Edge'
+
+
 #SailfishBrowser
 - regex: 'SailfishBrowser(?:/(\d+[\.\d]+))?'
   name: 'Sailfish Browser'
@@ -250,6 +258,13 @@
   engine:
     default: 'Blink'
 
+#Vivaldi
+- regex: 'Vivaldi(?:/(\d+[\.\d]+))?'
+  name: 'Vivaldi'
+  version: '$1'
+  engine:
+    default: 'Blink'
+
 #Midori
 - regex: 'Midori(?:/(\d+[\.\d]+))?'
   name: 'Midori'
@@ -309,6 +324,11 @@
 # Sogou Explorer
 - regex: 'SE (\d+[\.\d]+)'
   name: 'Sogou Explorer'
+  version: '$1'
+
+# QQ Browser
+- regex: 'QQBrowser/([\.\d]+)'
+  name: 'QQ Browser'
   version: '$1'
 
 #Chrome
@@ -398,7 +418,7 @@
 - regex: 'NCSA_Mosaic(?:/(\d+[\.\d]+))?'
   name: 'NCSA Mosaic'
   version: '$1'
-  
+
 #ABrowse
 - regex: 'ABrowse(?: (\d+[\.\d]+))?'
   name: 'ABrowse'
@@ -408,7 +428,7 @@
 - regex: 'amaya(?:/(\d+[\.\d]+))?'
   name: 'Amaya'
   version: '$1'
-  
+
 #Amiga Voyager
 - regex: 'AmigaVoyager(?:/(\d+[\.\d]+))?'
   name: 'Amiga Voyager'
@@ -525,6 +545,8 @@
 - regex: 'Sleipnir(?:[ /](\d+[\.\d]+))?'
   name: 'Sleipnir'
   version: '$1'
+  engine:
+    default: '' # multi engine
 
 #Lunascape
 - regex: 'Lunascape(?:[/ ](\d+[\.\d]+))?'
@@ -624,7 +646,12 @@
   version: '$1'
   engine:
     default: 'Blink'
-  
+
+# MIUI Browser
+- regex: 'MIUIBrowser(?:/(\d+[\.\d]+))?'
+  name: 'MIUI Browser'
+  version: '$1'
+
 #Nokia Browser
 - regex: '(?:NokiaBrowser|BrowserNG)(?:/(\d+[\.\d]+))?'
   name: 'Nokia Browser'
@@ -737,5 +764,3 @@
   version: '$1'
   engine:
     default: 'WebKit'
-
-

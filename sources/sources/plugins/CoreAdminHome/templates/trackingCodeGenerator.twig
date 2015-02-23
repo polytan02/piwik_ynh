@@ -1,4 +1,4 @@
-{% extends 'admin.twig' %}
+{% extends 'user.twig' %}
 
 {% block head %}
     {{ parent() }}
@@ -13,16 +13,16 @@
     feature-name="{{ 'CoreAdminHome_TrackingCode'|translate }}"
     help-url="http://piwik.org/docs/tracking-api/">{{ 'CoreAdminHome_JavaScriptTracking'|translate }}</h2>
 
-<div id="js-code-options" class="adminTable">
+<div id="js-code-options">
 
     <p>
         {{ 'CoreAdminHome_JSTrackingIntro1'|translate }}
         <br/><br/>
-        {{ 'CoreAdminHome_JSTrackingIntro2'|translate }} {{ 'CoreAdminHome_JSTrackingIntro3'|translate('<a href="http://piwik.org/integrate/" target="_blank">','</a>')|raw }}
+        {{ 'CoreAdminHome_JSTrackingIntro2'|translate }} {{ 'CoreAdminHome_JSTrackingIntro3'|translate('<a href="http://piwik.org/integrate/" rel="noreferrer"  target="_blank">','</a>')|raw }}
         <br/><br/>
         {{ 'CoreAdminHome_JSTrackingIntro4'|translate('<a href="#image-tracking-link">','</a>')|raw }}
         <br/><br/>
-        {{ 'CoreAdminHome_JSTrackingIntro5'|translate('<a target="_blank" href="http://piwik.org/docs/javascript-tracking/">','</a>')|raw }}
+        {{ 'CoreAdminHome_JSTrackingIntro5'|translate('<a rel="noreferrer"  target="_blank" href="http://piwik.org/docs/javascript-tracking/">','</a>')|raw }}
     </p>
 
     <div>
@@ -167,7 +167,7 @@
                         <label for="custom-campaign-query-params-check">{{ 'CoreAdminHome_JSTracking_CustomCampaignQueryParam'|translate }}</label>
 
                         <div class="small-form-description">
-                            {{ 'CoreAdminHome_JSTracking_CustomCampaignQueryParamDesc'|translate('<a href="http://piwik.org/faq/general/#faq_119" target="_blank">','</a>')|raw }}
+                            {{ 'CoreAdminHome_JSTracking_CustomCampaignQueryParamDesc'|translate('<a href="http://piwik.org/faq/general/#faq_119" rel="noreferrer"  target="_blank">','</a>')|raw }}
                         </div>
 
                         <table style="display:none;" id="js-campaign-query-param-extra">
@@ -201,12 +201,12 @@
 
 <h2 id="image-tracking-link">{{ 'CoreAdminHome_ImageTracking'|translate }}</h2>
 
-<div id="image-tracking-code-options" class="adminTable">
+<div id="image-tracking-code-options">
 
     <p>
         {{ 'CoreAdminHome_ImageTrackingIntro1'|translate }} {{ 'CoreAdminHome_ImageTrackingIntro2'|translate("<em>&lt;noscript&gt;&lt;/noscript&gt;</em>")|raw }}
         <br/><br/>
-        {{ 'CoreAdminHome_ImageTrackingIntro3'|translate('<a href="http://piwik.org/docs/tracking-api/reference/" target="_blank">','</a>')|raw }}
+        {{ 'CoreAdminHome_ImageTrackingIntro3'|translate('<a href="http://piwik.org/docs/tracking-api/reference/" rel="noreferrer"  target="_blank">','</a>')|raw }}
     </p>
 
     <div>
@@ -276,7 +276,7 @@
 <h2>{{ 'CoreAdminHome_ImportingServerLogs'|translate }}</h2>
 
 <p>
-    {{ 'CoreAdminHome_ImportingServerLogsDesc'|translate('<a href="http://piwik.org/log-analytics/" target="_blank">','</a>')|raw }}
+    {{ 'CoreAdminHome_ImportingServerLogsDesc'|translate('<a href="http://piwik.org/log-analytics/" rel="noreferrer"  target="_blank">','</a>')|raw }}
 </p>
 
 {% endblock %}

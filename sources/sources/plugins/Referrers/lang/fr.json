@@ -9,7 +9,6 @@
         "ColumnSocial": "Réseaux sociaux",
         "ColumnWebsite": "Site Web",
         "ColumnWebsitePage": "Page du site",
-        "DetailsByReferrerType": "Détails de types d'acquisitions",
         "DirectEntry": "Entrées directes",
         "DirectEntryDocumentation": "Un visiteur a entré directement l'URL du site web dans son navigateur et a commencé à parcourir votre site web - il est entré directement sur le site web.",
         "Distinct": "Provenances distinctes par type de Provenance",
@@ -48,7 +47,6 @@
         "WebsitesReportDocumentation": "Dans ce tableau vous pouvez voir quels sites web ont conduit des visiteurs sur votre site.. %s En cliquant sur une ligne du tableau, vous pouvez voir les URL des sites sur lesquels sont les liens.",
         "WidgetExternalWebsites": "Sites Internet référents",
         "WidgetGetAll": "Tous les référents",
-        "WidgetKeywords": "Liste des mots-clés",
         "WidgetSocials": "Liste des réseaux sociaux",
         "WidgetTopKeywordsForPages": "Meilleurs mots-clés pour l'URL",
         "XPercentOfVisits": "%s%% des visites"

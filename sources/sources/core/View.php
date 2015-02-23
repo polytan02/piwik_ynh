@@ -232,16 +232,9 @@ class View implements ViewInterface
             $user = APIUsersManager::getInstance()->getUser($this->userLogin);
             $this->userAlias = $user['alias'];
         } catch (Exception $e) {
-            Log::verbose($e);
+            Log::debug($e);
 
             // can fail, for example at installation (no plugin loaded yet)
-        }
-
-        try {
-            $this->totalTimeGeneration = Registry::get('timer')->getTime();
-            $this->totalNumberOfQueries = Profiler::getQueryCount();
-        } catch (Exception $e) {
-            $this->totalNumberOfQueries = 0;
         }
 
         ProxyHttp::overrideCacheControlHeaders('no-store');

@@ -56,7 +56,7 @@ class SynchronizeUsersTest extends LdapIntegrationTest
         $this->assertEquals(0, $result, $this->getCommandDisplayOutputErrorMessage());
 
         $users = $this->getLdapUserLogins();
-        $this->assertEquals(array('blackwidow', 'captainamerica', 'ironman', 'msmarvel', 'thor'), $users);
+        $this->assertEquals(array('blackwidow', 'captainamerica', 'ironman', 'msmarvel', 'rogue@xmansion.org', 'thor'), $users);
     }
 
     public function test_CommandSynchronizesOneUser_WhenLoginSpecified()
@@ -104,6 +104,24 @@ class SynchronizeUsersTest extends LdapIntegrationTest
 
         $this->assertRegExp("/^.*missinguser.*User.*not found.*$/", $this->applicationTester->getDisplay());
         $this->assertRegExp("/^.*msmarvel.*LDAP entity missing required.*$/", $this->applicationTester->getDisplay());
+    }
+
+    public function test_CommandSkipsExisitingUsers_IfSkipExistingOptionUsed()
+    {
+        $this->addPreexistingSuperUser();
+
+        $result = $this->applicationTester->run(array(
+            'command' => 'loginldap:synchronize-users',
+            '--login' => array('ironman', 'captainamerica'),
+            '--skip-existing' => true,
+            '-v' => true
+        ));
+
+        $this->assertEquals(0, $result, $this->getCommandDisplayOutputErrorMessage());
+        $this->assertContains("Skipping 'captainamerica', already exists in Piwik...", $this->applicationTester->getDisplay());
+
+        $users = $this->getLdapUserLogins();
+        $this->assertEquals(array('ironman'), $users);
     }
 
     private function getLdapUserLogins()

@@ -7,7 +7,6 @@
         "ColumnSearchEngine": "Motorë Kërkimesh",
         "ColumnWebsite": "\"Site\" Web",
         "ColumnWebsitePage": "Faqe \"site\"-i Web",
-        "DetailsByReferrerType": "Hollësi sipas Llojit të Referuesit",
         "DirectEntry": "Zë i Drejtpërdrejtë",
         "DirectEntryDocumentation": "Një vizitor dha URL-në te shfletuesi i vet dhe filloi shfletimin e site-it tuaj - site-in e dha drejtpërdrejt.",
         "Distinct": "Referuesa të Dallueshëm sipas Llojit të Referuesit",
@@ -37,7 +36,6 @@
         "Websites": "\"Site\"-e Web",
         "WebsitesDocumentation": "Vizitori ndoqi një lidhje në një site tjetër web e cila të shpinte te site-i juaj. Për më tepër hollësira, %s shihni %s raportin.",
         "WebsitesReportDocumentation": "Në këtë tabelë, mund të shihni cilët site-e web sollën vizitorë te site-i juaj. %s Duke klikuar mbi një rresht të tabelës, mund të shihni se te cilat URL gjendeshin lidhjet për te site-i juaj web.",
-        "WidgetExternalWebsites": "Listë e \"site\"-eve Web të jashtëm",
-        "WidgetKeywords": "Listë e Fjalëkyçave"
+        "WidgetExternalWebsites": "Listë e \"site\"-eve Web të jashtëm"
     }
 }

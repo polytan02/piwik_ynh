@@ -1,6 +1,12 @@
 {% extends 'admin.twig' %}
 
 {% block content %}
+{% if isLoginControllerActivated|default(false) %}
+<div piwik-notification context="warning" noclear="true">
+    <strong>{{ 'General_Warning'|translate }}</strong>: {{ 'LoginLdap_LoginPluginEnabledWarning'|translate("Login", "LoginLdap") }}
+</div>
+{% endif %}
+
 <div ng-controller="LoginLdapAdminController as adminController"
      data-servers="{{ servers|json_encode }}">
     <h2>{{ 'LoginLdap_Settings'|translate }}</h2>
@@ -15,9 +21,16 @@
             <td>
                 <label for="use_ldap_for_authentication">{{ 'LoginLdap_UseLdapForAuthentication'|translate }}</label><br/>
                 <span class='form-description'>{{ 'LoginLdap_UseLdapForAuthenticationDescription'|translate }}</span>
+                <br/><br/>
+                <span class='form-description'>{{ 'LoginLdap_MobileAppIntegrationNote'|translate }}</span>
             </td>
             <td>
                 <input type="checkbox" {% if ldapConfig.use_ldap_for_authentication %}checked="checked"{% endif %} id="use_ldap_for_authentication" name="use_ldap_for_authentication"/>
+                {% if updatedFromPre30|default %}
+                    <div piwik-notification context="warning" noclear="true" id="pre300AlwaysUseLdapWarning">
+                        <strong>{{ 'General_Note'|translate }}</strong>: {{ 'LoginLdap_UpdateFromPre300Warning'|translate }}
+                    </div>
+                {% endif %}
             </td>
         </tr>
 
@@ -55,6 +68,18 @@
             </td>
         </tr>
 
+        <tr>
+            <td>
+                <label for="memberOfField">{{ 'LoginLdap_MemberOfField'|translate }} </label>
+                <br/>
+                <span class='form-description'>{{ 'LoginLdap_MemberOfFieldDescription'|translate }}</span><br/>
+                <br/>
+            </td>
+            <td>
+                <input size="25" id="memberOfField" name="required_member_of_field" value="{{ ldapConfig.required_member_of_field }}"/>
+            </td>
+        </tr>
+        
         <tr>
             <td>
                 <label for="memberOf">{{ 'LoginLdap_MemberOf'|translate }} </label>
@@ -117,6 +142,21 @@
             </td>
             <td>
                 <input size="25" type="checkbox" id="generateRandomTokenAuth" {% if ldapConfig.enable_random_token_auth_generation %}checked="checked"{% endif %} name="enable_random_token_auth_generation"/>
+
+                <div piwik-notification context="info" id="synchronizeIndividualUserForm" noclear="true">
+                    <strong>{{ 'LoginLdap_LoadUser'|translate }}</strong>
+                    <p>{{ 'LoginLdap_LoadUserDescription'|translate }}</p>
+                    <input ng-model="userToSynchronize" type="text" value="" piwik-onenter="$parent.$parent.synchronizeUser(userToSynchronize)" placeholder="Enter a username..."/>
+                    <a href="" ng-click="$parent.$parent.synchronizeUser(userToSynchronize)">{{ 'LoginLdap_Go'|translate }}</a>
+                    <img src="plugins/Morpheus/images/loading-blue.gif" ng-show="$parent.$parent.currentSynchronizeUserRequest" /><br/>
+                    <br/>
+                    <div ng-show="$parent.$parent.synchronizeUserError || $parent.$parent.synchronizeUserDone">
+                        <div ng-if="$parent.$parent.synchronizeUserError">{% verbatim %}{{ $parent.$parent.$parent.synchronizeUserError }}{% endverbatim %}</div>
+                        <div ng-if="$parent.$parent.synchronizeUserDone">{% verbatim %}<strong>{{ 'General_Done'|translate }}!</strong>{% endverbatim %}</div>
+                        <br/>
+                    </div>
+                    <span>{{ 'LoginLdap_LoadUserCommandDesc'|translate('<a target="_blank" href="https://github.com/piwik/plugin-LoginLdap#commands">loginldap:synchronize-users</a>')|raw }}</span>
+                </div>
             </td>
         </tr>
         <tr>
@@ -351,7 +391,7 @@
                 <tr>
                     <td width="150"><label for="serverUrl-\{\{ $index \}\}">{{ 'LoginLdap_ServerUrl'|translate }} </label></td>
                     <td>
-                        <input size="25" id="serverUrl-\{\{ $index \}\}" ng-model="serverInfo.hostname" placeholder="ldap://localhost/" type="text"/>
+                        <input size="25" id="serverUrl-\{\{ $index \}\}" ng-model="serverInfo.hostname" placeholder="localhost" type="text"/>
                     </td>
                     <td>
                         &nbsp;
@@ -364,7 +404,11 @@
                         <input size="25" id="ldapPort-\{\{ $index \}\}" ng-model="serverInfo.port" type="text" placeholder="389"/>
                     </td>
                     <td>
-                        &nbsp;
+                        <div ng-show="serverInfo.port && serverInfo.port != 389 && serverInfo.hostname && serverInfo.hostname.indexOf('ldap://') != -1">
+                            <div piwik-notification context="info" id="ldapUrlPortWarning" noclear="true">
+                                <strong>{{ 'General_Warning'|translate }}</strong>: {{ 'LoginLdap_LdapUrlPortWarning'|translate }}
+                            </div>
+                        </div>
                     </td>
                 </tr>
 

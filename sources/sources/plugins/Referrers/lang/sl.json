@@ -6,7 +6,6 @@
         "ColumnSocial": "Družbeno omrežje",
         "ColumnWebsite": "Spletna stran",
         "ColumnWebsitePage": "Spletna stran",
-        "DetailsByReferrerType": "Podrobnosti o tipu napotitelja",
         "DirectEntry": "Neposreden obisk",
         "Distinct": "Različnih napotiteljev po tipu",
         "DistinctCampaigns": "različne kampanje",
@@ -24,7 +23,6 @@
         "TypeReportDocumentation": "Ta tabela vsebuje informacije o porazdelitvi tipov napotiteljev",
         "Websites": "Spletne strani",
         "WidgetExternalWebsites": "Seznam zunanjih spletnih strani",
-        "WidgetGetAll": "Vsi napotitelji",
-        "WidgetKeywords": "Seznam ključnih besed"
+        "WidgetGetAll": "Vsi napotitelji"
     }
 }

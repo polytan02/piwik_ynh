@@ -1,6 +1,7 @@
 {
     "General": {
         "AboutPiwikX": "Acerca de Piwik %s",
+        "Actions": "Accións",
         "AllWebsitesDashboard": "Tableiro de todas as Webs",
         "API": "API",
         "BackToPiwik": "Voltar a Piwik",
@@ -61,7 +62,6 @@
         "ExportAsImage": "Exportar como Imaxe",
         "ExportThisReport": "Exportar datos noutros formatos",
         "ForExampleShort": "ex.",
-        "GeneralSettings": "Configuración Xeral",
         "GiveUsYourFeedback": "Contacte con Nos",
         "GoTo": "Ir a %s",
         "HelloUser": "Ola, %s!",

@@ -22,7 +22,7 @@ var exports = require('piwik/UI'),
  * method, and this class instance is stored using the jQuery $.data function
  * with the 'uiControlObject' key.
  *
- * To find a datatable element by report (ie, 'UserSettings.getBrowser'),
+ * To find a datatable element by report (ie, 'DevicesDetection.getBrowsers'),
  * use piwik.DataTable.getDataTableByReport.
  *
  * To get the dataTable JS instance (an instance of this class) for a
@@ -67,7 +67,7 @@ DataTable.registerFooterIconHandler = function (id, handler) {
 /**
  * Returns the first datatable div displaying a specific report.
  *
- * @param {string} report  The report, eg, UserSettings.getWideScreen
+ * @param {string} report  The report, eg, UserLanguage.getLanguage
  * @return {Element} The datatable div displaying the report, or undefined if
  *                   it cannot be found.
  */
@@ -138,6 +138,10 @@ $.extend(DataTable.prototype, UIControl.prototype, {
 
     isDashboard: function () {
         return !!$('#dashboardWidgetsArea').length;
+    },
+
+    getReportMetadata: function () {
+        return JSON.parse(this.$element.attr('data-report-metadata') || '{}');
     },
 
     //Reset DataTable filters (used before a reload or view change)
@@ -1048,6 +1052,14 @@ $.extend(DataTable.prototype, UIControl.prototype, {
             .attr('href', function () {
                 var format = $(this).attr('format');
                 var method = $(this).attr('methodToCall');
+                var params = $(this).attr('requestParams');
+
+                if (params) {
+                    params = JSON.parse(params)
+                } else {
+                    params = {};
+                }
+
                 var segment = self.param.segment;
                 var label = self.param.label;
                 var idGoal = self.param.idGoal;
@@ -1072,6 +1084,7 @@ $.extend(DataTable.prototype, UIControl.prototype, {
                     && self.param.viewDataTable == "graphEvolution") {
                     period = 'day';
                 }
+
                 var str = 'index.php?module=API'
                     + '&method=' + method
                     + '&format=' + format
@@ -1081,9 +1094,15 @@ $.extend(DataTable.prototype, UIControl.prototype, {
                     + ( typeof self.param.filter_pattern != "undefined" ? '&filter_pattern=' + self.param.filter_pattern : '')
                     + ( typeof self.param.filter_pattern_recursive != "undefined" ? '&filter_pattern_recursive=' + self.param.filter_pattern_recursive : '');
 
+                if ($.isPlainObject(params)) {
+                    $.each(params, function (index, param) {
+                        str += '&' + index + '=' + encodeURIComponent(param);
+                    });
+                }
+
                 if (typeof self.param.flat != "undefined") {
                     str += '&flat=' + (self.param.flat == 0 ? '0' : '1');
-                    if (typeof self.param.include_aggregate_rows != "undefined" && self.param.include_aggregate_rows) {
+                    if (typeof self.param.include_aggregate_rows != "undefined" && self.param.include_aggregate_rows == '1') {
                         str += '&include_aggregate_rows=1';
                     }
                     if (!self.param.flat
@@ -1708,7 +1727,7 @@ $.extend(DataTable.prototype, UIControl.prototype, {
     },
 
     handleSummaryRow: function (domElem) {
-        var details = _pk_translate('General_LearnMore', [' (<a href="http://piwik.org/faq/how-to/faq_54/" target="_blank">', '</a>)']);
+        var details = _pk_translate('General_LearnMore', [' (<a href="http://piwik.org/faq/how-to/faq_54/" rel="noreferrer"  target="_blank">', '</a>)']);
 
         domElem.find('tr.summaryRow').each(function () {
             var labelSpan = $(this).find('.label .value');
@@ -1890,11 +1909,26 @@ var switchToHtmlTable = function (dataTable, viewDataTable) {
     dataTable.notifyWidgetParametersChange(dataTable.$element, {viewDataTable: viewDataTable});
 };
 
+var switchToEcommerceView = function (dataTable, viewDataTable) {
+    if (viewDataTable == 'ecommerceOrder') {
+        dataTable.param.abandonedCarts = '0';
+    } else {
+        dataTable.param.abandonedCarts = '1';
+    }
+
+    var viewDataTable = dataTable.param.viewDataTable;
+    if (viewDataTable == 'ecommerceOrder' || viewDataTable == 'ecommerceAbandonedCart') {
+        viewDataTable = 'table';
+    }
+
+    switchToHtmlTable(dataTable, viewDataTable);
+};
+
 DataTable.registerFooterIconHandler('table', switchToHtmlTable);
 DataTable.registerFooterIconHandler('tableAllColumns', switchToHtmlTable);
 DataTable.registerFooterIconHandler('tableGoals', switchToHtmlTable);
-DataTable.registerFooterIconHandler('ecommerceOrder', switchToHtmlTable);
-DataTable.registerFooterIconHandler('ecommerceAbandonedCart', switchToHtmlTable);
+DataTable.registerFooterIconHandler('ecommerceOrder', switchToEcommerceView);
+DataTable.registerFooterIconHandler('ecommerceAbandonedCart', switchToEcommerceView);
 
 // generic function to handle switch to graph visualizations
 DataTable.switchToGraph = function (dataTable, viewDataTable) {

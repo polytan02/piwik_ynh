@@ -35,6 +35,12 @@ class LdapUsers
      */
     private $authenticationRequiredMemberOf;
 
+     /**
+     *Field used by your LDAP to indicate membership, by default \"memberOf\"
+     * @var string
+     */
+    private $authenticationMemberOfField;
+
     /**
      * If set, this value is added to the end of usernames before authentication
      * is attempted.
@@ -271,7 +277,12 @@ class LdapUsers
                     continue;
                 }
 
-                $userIds[] = $entry[$userIdField];
+                $userId = $entry[$userIdField];
+                if (is_array($userId)) {
+                    $userId = reset($userId);
+                }
+
+                $userIds[] = $userId;
             }
             return $userIds;
         });
@@ -289,6 +300,16 @@ class LdapUsers
     public function setAuthenticationRequiredMemberOf($authenticationRequiredMemberOf)
     {
         $this->authenticationRequiredMemberOf = $authenticationRequiredMemberOf;
+    }
+
+    /**
+     * Sets the {@link $authenticationMemberOfField} member.
+     *
+     * @param string $authenticationMemberOfField
+     */
+    public function setAuthenticationMemberOfField($authenticationMemberOfField)
+    {
+        $this->authenticationMemberOfField = $authenticationMemberOfField;
     }
 
     /**
@@ -378,16 +399,16 @@ class LdapUsers
     {
         $bind = array();
         $conditions = array();
-
+        
         if (!empty($this->authenticationLdapFilter)) {
             $conditions[] = $this->authenticationLdapFilter;
         }
 
         if (!empty($this->authenticationRequiredMemberOf)) {
-            $conditions[] = "(memberof=?)";
+            $conditions[] = "(".$this->authenticationMemberOfField."=?)";
             $bind[] = $this->authenticationRequiredMemberOf;
         }
-
+        
         if (!empty($username)) {
             $conditions[] = "(" . $this->ldapUserMapper->getLdapUserIdField() . "=?)";
             $bind[] = $this->addUsernameSuffix($username);
@@ -538,6 +559,12 @@ class LdapUsers
         if (!empty($requiredMemberOf)) {
             $result->setAuthenticationRequiredMemberOf($requiredMemberOf);
         }
+
+        $memberOfField = Config::getRequiredMemberOfField();
+        if (!empty($memberOfField)) {
+            $result->setAuthenticationMemberOfField($memberOfField);
+        }
+
 
         $filter = Config::getLdapUserFilter();
         if (!empty($filter)) {

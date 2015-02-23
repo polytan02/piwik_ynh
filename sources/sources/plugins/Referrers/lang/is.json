@@ -5,7 +5,6 @@
         "ColumnSearchEngine": "Leitarvél",
         "ColumnWebsite": "Vefur",
         "ColumnWebsitePage": "Vefsíða",
-        "DetailsByReferrerType": "Smáatriði eftir Tegund Sendanda",
         "DirectEntry": "Beinar Innfærslur",
         "Distinct": "Mismundandi Sendendur eftir Tegund Sendanda",
         "DistinctCampaigns": "mismunandi herferðir",
@@ -25,7 +24,6 @@
         "TypeWebsites": "%s frá vefjum",
         "UsingNDistinctUrls": "(notuð eru %s mismunandi url)",
         "Websites": "Vefir",
-        "WidgetExternalWebsites": "Listi yfir ytri vefi",
-        "WidgetKeywords": "Listi yfir Leitarorð"
+        "WidgetExternalWebsites": "Listi yfir ytri vefi"
     }
 }

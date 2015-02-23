@@ -21,15 +21,6 @@ use Piwik\Translate;
  */
 class Goals extends \Piwik\Plugin
 {
-    public function getInformation()
-    {
-        $suffix = Piwik::translate('SitesManager_PiwikOffersEcommerceAnalytics',
-            array('<a href="http://piwik.org/docs/ecommerce-analytics/" target="_blank">', '</a>'));
-        $info = parent::getInformation();
-        $info['description'] .= ' ' . $suffix;
-        return $info;
-    }
-
     public static function getReportsWithGoalMetrics()
     {
         $dimensions = self::getAllReportsWithGoalMetrics();
@@ -69,7 +60,6 @@ class Goals extends \Piwik\Plugin
         $columns = array(
             'nb_conversions',
             'nb_visits_converted',
-            'conversion_rate',
             'revenue',
         );
         if ($idGoal === false) {

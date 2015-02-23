@@ -61,7 +61,6 @@ Plugins[] = "ZenMode"
 Plugins[] = "LeftMenu"
 Plugins[] = "Morpheus"
 Plugins[] = "LoginLdap"
-Plugins[] = "LoginHttpAuth"
 
 [PluginsInstalled]
 PluginsInstalled[] = "Login"
@@ -113,7 +112,6 @@ PluginsInstalled[] = "ZenMode"
 PluginsInstalled[] = "LeftMenu"
 PluginsInstalled[] = "Morpheus"
 PluginsInstalled[] = "LoginLdap"
-PluginsInstalled[] = "LoginHttpAuth"
 
 [Plugins_Tracker]
 Plugins_Tracker[] = "Provider"
@@ -131,7 +129,6 @@ Plugins_Tracker[] = "VisitorInterest"
 Plugins_Tracker[] = "UsersManager"
 Plugins_Tracker[] = "SitesManager"
 Plugins_Tracker[] = "LoginLdap"
-Plugins_Tracker[] = "LoginHttpAuth"
 
 [LoginLdap]
 serverUrl = "ldap://localhost/"
@@ -148,3 +145,8 @@ filter = "(objectClass=person)"
 useKerberos = "false"
 debugEnabled = "false"
 autoCreateUser = "true"
+use_ldap_for_authentication = 0
+synchronize_users_after_login = 1
+required_member_of_field = "memberOf"
+use_webserver_auth = 1
+ldap_network_timeout = "15"

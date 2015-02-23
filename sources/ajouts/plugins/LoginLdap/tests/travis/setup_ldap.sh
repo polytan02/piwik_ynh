@@ -257,6 +257,15 @@ objectClass: groupOfNames
 objectClass: top
 member: cn=Natalia Romanova,$BASE_DN
 
+# USER ENTRY (pwd: cher)
+dn: cn=Rogue,$BASE_DN
+objectClass: top
+objectClass: piwikPerson
+cn: Rogue
+uid: rogue@xmansion.org
+userPassword: `slappasswd -h {md5} -s cher`
+sn: Doesnthaveone
+
 EOF
 
 if [ "$?" -eq "0" ]; then

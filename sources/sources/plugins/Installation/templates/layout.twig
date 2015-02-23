@@ -1,8 +1,5 @@
 <!DOCTYPE html>
-<!--[if lt IE 9 ]>
-<html class="old-ie" id="ng-app" ng-app="piwikApp"> <![endif]-->
-<!--[if (gte IE 9)|!(IE)]><!-->
-<html id="ng-app" ng-app="piwikApp"><!--<![endif]-->
+<html id="ng-app" ng-app="piwikApp">
 <head>
     <meta charset="utf-8">
     <title>Piwik &rsaquo; {{ 'Installation_Installation'|translate }}</title>
@@ -30,7 +27,10 @@
         <link rel="stylesheet" type="text/css" href="plugins/Morpheus/stylesheets/rtl.css"/>
     {% endif %}
 </head>
-<body ng-app="app">
+<!--[if lt IE 9 ]>
+<body ng-app="app" class="old-ie"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!-->
+<body ng-app="app"><!--<![endif]-->
 <div id="installationPage">
     <div id="content">
         <div id="logo">
@@ -50,7 +50,7 @@
         <div id="detailInstall">
             {% set nextButton %}
             <p class="nextStep">
-                <a class="submit" href="{{ linkTo({'action':nextModuleName, 'token_auth':null, 'method':null }) }}">{{ 'General_Next'|translate }} &raquo;</a>
+                <a style="margin-top: -5px;" class="submit" href="{{ linkTo({'action':nextModuleName, 'token_auth':null, 'method':null }) }}">{{ 'General_Next'|translate }} &raquo;</a>
             </p>
             {%  endset %}
             {% if showNextStepAtTop is defined and showNextStepAtTop %}
@@ -67,7 +67,7 @@
         <br/>
         <br/>
 
-        <h3>{{ 'Installation_InstallationStatus'|translate }}</h3>
+        <h4>{{ 'Installation_InstallationStatus'|translate }}</h4>
 
         <div id="progressbar" data-progress="{{ percentDone }}"></div>
         {{ 'Installation_PercentDone'|translate(percentDone) }}

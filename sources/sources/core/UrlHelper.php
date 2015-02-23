@@ -8,6 +8,9 @@
  */
 namespace Piwik;
 
+use Piwik\Container\StaticContainer;
+use Piwik\Intl\Data\Provider\RegionDataProvider;
+
 /**
  * Contains less commonly needed URL helper methods.
  *
@@ -72,7 +75,9 @@ class UrlHelper
     {
         static $countries;
         if (!isset($countries)) {
-            $countries = implode('|', array_keys(Common::getCountriesList(true)));
+            /** @var RegionDataProvider $regionDataProvider */
+            $regionDataProvider = StaticContainer::get('Piwik\Intl\Data\Provider\RegionDataProvider');
+            $countries = implode('|', array_keys($regionDataProvider->getCountryList(true)));
         }
 
         return preg_replace(
@@ -101,8 +106,8 @@ class UrlHelper
      */
     public static function isLookLikeUrl($url)
     {
-        return preg_match('~^(ftp|news|http|https)?://(.*)$~D', $url, $matches) !== 0
-        && strlen($matches[2]) > 0;
+        return preg_match('~^((ftp|news|http|https)?:)?//(.*)$~D', $url, $matches) !== 0
+        && strlen($matches[3]) > 0;
     }
 
     /**
@@ -411,6 +416,7 @@ class UrlHelper
                             || strpos($query, sprintf('?%s=', $variableName)) !== false
 
                             // search engines with no keyword
+                            || $searchEngineName == 'Ixquick'
                             || $searchEngineName == 'Google Images'
                             || $searchEngineName == 'DuckDuckGo')
                     ) {
