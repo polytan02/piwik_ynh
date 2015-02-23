@@ -1,0 +1,17 @@
+{
+    "CorePluginsAdmin": {
+        "Activate": "Activar",
+        "Activated": "Activado",
+        "Active": "Activo",
+        "AuthorHomepage": "HomePage do Autor",
+        "Deactivate": "Desactivar",
+        "Inactive": "Inactivo",
+        "LicenseHomepage": "Homepage da licença",
+        "OncePluginIsInstalledYouMayActivateHere": "Quando um plugin é instalado, pode activá-lo ou desactivá-lo aqui.",
+        "PluginHomepage": "Homepage do Plugin",
+        "PluginsExtendPiwik": "Plugins estendem e expandem a funcionalidade de Piwik.",
+        "PluginsManagement": "Gestão de Plugins",
+        "Status": "Estado",
+        "Version": "Versão"
+    }
+}
