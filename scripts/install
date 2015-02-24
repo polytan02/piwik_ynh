@@ -49,7 +49,10 @@ sudo sed -i "s@NAMETOCHANGE@piwik@g" ../conf/nginx.conf
 
 # Copy files to right place
 sudo mkdir -p $final_path
-sudo cp -a ../sources/sources/.* $final_path
+# Création archive source: tar -czp -f piwik.tar.gz piwik
+# Décompresse la source
+tar -x -f ../sources/piwik.tar.gz
+sudo cp -a piwik/.* $final_path
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/piwik.conf
 
 # Set right permissions for curl install
